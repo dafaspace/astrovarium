@@ -12,10 +12,10 @@ Not yet confirmed by Dafa as a whole. Points 2 and 3 revised the same day after 
 trial and on where the line runs._
 
 **1. Who pays, for what, how much, how often.**
-A practising astrologer or an astrology student outside Russia pays once, about $9.99, for a
+A practising astrologer or an astrology student outside Russia pays once, $29.99, for a
 professional chart and forecasting tool on the phone that works offline, keeps clients' charts
 on the device, and whose positions are checked against JPL Horizons. **[decided 11 Oct:** one-time,
-about $10, no subscription**]** Nothing recurs that would justify a subscription - no server, no
+no subscription**; price raised to $29.99 on 29 Oct]** Nothing recurs that would justify a subscription - no server, no
 new data, no AI (main instruction, section 5) - and Astro Gold's move from $49.99 once to a
 subscription in Dec 2025 left it at 3.67 stars, the lowest in its field **[fact, MARKET.md]**.
 
@@ -80,9 +80,24 @@ against another person is paid.** **[decided 13 Oct]**
   The web cannot take payment (no provider for a seller in Georgia is confirmed, and Paddle bans
   horoscopes outright); the dafaspace.com card that promises forecasting on the web changes
   with this.
-- **Price, open:** $9.99 proposed; Astro Gold Essentials is $24.99 **[fact, MARKET.md]**.
-  Experiment: after the first 20 sales or on 31 Jan 2027, whichever comes first, move the price
-  and write down sales per week before and after.
+- **Price: $29.99 once, $19.99 for the first month after launch.** **[decided 29 Oct]** Checked
+  the same day in `docs/pricing-2026-10.md`:
+  - iPhemeris, the closest paid-upfront app, is $29.99 in the US, and its astrologer reviewers call
+    it inexpensive **[fact, App Store, 29 Oct]**. The anger in 249 price reviews of four apps is
+    about hidden costs, "once" turned into a subscription and lost charts, never the headline
+    price **[fact]**. So one unlock opens everything paid, and the licence rule is on the purchase
+    screen.
+  - A one-time purchase has no introductory offer in the App Store, only a scheduled price change,
+    and no crossed-out price is shown **[fact, Apple's documentation]**. The launch is said as
+    "Launch price $19.99 until [date]; from [date] $29.99", never "$29.99, now $19.99": we will not
+    have charged $29.99 before, and the EU rule on prior prices forbids inventing one.
+  - After Apple's 15%, $29.99 earns more than $19.99 while its buy rate is at least two thirds of the
+    launch month's **[arithmetic]**.
+  - **[unknown]** what astrologers think is too cheap or too dear: the 15 Nov testers' answers
+    (point 6) decide it. Other storefronts stay on Apple's equivalents (€34.99, £29.99) until sales
+    show otherwise.
+  Experiment: the launch month at $19.99 against the next month at $29.99, buy rate per trial and
+  refunds written down for both; if $29.99 loses on net per trial, return to $19.99.
 
 **4. If money is not reachable.**
 It is not proven: nobody has said they would pay **[fact]**; free calculators (astro.com,
@@ -126,7 +141,10 @@ labelled as a founding-tester licence. Where testers come from and the letters t
 `docs/outreach-testers-2026-10.md`.
 
 **6. The number and the date.**
-How many of the 10-20 invited astrologers answer yes to "after a week with everything, would you
-pay $9.99 once for transits, progressions, returns and synastry", checked on 15 Nov 2026. **[proposal]** Three or more: the paid version is built. Fewer: money is
+How many of the 10-20 invited astrologers answer yes at $29.99 on the price ladder, checked on
+15 Nov 2026 with the four price questions in `docs/beta-feedback.md`, recorded as stated intent.
+**[decided 29 Oct]** Three or more: the paid version is built at $29.99. If the testers' median
+"getting expensive" is below $29.99, the price is $19.99 and there is no launch discount. Fewer
+than three yes at any price: money is
 not reachable; AstroTrip goes to the store free, keeps the feedback and the engine, and gets no
 new features.

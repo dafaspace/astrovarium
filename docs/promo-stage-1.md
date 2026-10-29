@@ -53,8 +53,9 @@ not advertising channels.
   founding testers - Astrovarium 1 free for good, the next major free, then 50% off, and credits.
 - **The one task:** "Build a chart whose data you know for certain and compare it with your own
   program. If anything does not match - a degree, a cusp, a house, an aspect - write to me."
-- **One question at the end of the week** (the Money block's number): "After a week with
-  everything, would you pay $9.99 once for transits, progressions, returns and synastry?"
+- **The price questions at the end of the week** (the Money block's number): the four Van
+  Westendorp questions and a yes or no at $14.99, $19.99, $29.99 and $39.99, listed in
+  `docs/beta-feedback.md`. The price is $29.99 once, $19.99 in the launch month (Dafa, 29 Oct).
 - **Where answers are kept:** `docs/beta-feedback.md` in this repo (decided 29 Oct), one entry per
   report, plus the usage reports they send from Settings → Report for the developer.
 
@@ -96,7 +97,7 @@ Ads search, cap $50, 7 days, keywords "natal chart" and "transit chart"; worth r
 brings at least one paid unlock per $25 spent.
 
 ## 9. One number and one date
-**How many of the 10-20 testers answer "yes" to paying $9.99 once, read on 15 Nov 2026, recorded as
+**How many of the 10-20 testers answer "yes" to paying $29.99 once, read on 15 Nov 2026, recorded as
 stated intent**, a weak signal (_HQ, 29 Oct). Where an act can be measured it outranks it: App Store
 pre-orders once the record exists, or a real payment through whichever path comes first. Three or
 more: the paid version and the store launch go ahead. Fewer: Astrovarium goes to the store free and

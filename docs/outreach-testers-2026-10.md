@@ -39,10 +39,9 @@ Ranked by how ready a person is to answer, warmest first. Everything below was f
 Not found: a Solar Fire or Astro Gold user group on Facebook or groups.io. The Astrodienst forum,
 once the main English-language place, closed on 31 January 2023.
 
-A correction to MARKET.md found on the way: Astro Gold on iOS now sells the Gold level both as a
-one-off lifetime purchase and as a subscription, with a 7-day trial; MARKET.md says it moved to a
-subscription in December 2025. To be checked on the App Store listing before the listing copy
-leans on it.
+Checked on the App Store on 29 Oct (`docs/pricing-2026-10.md`): Astro Gold shows "Gold Monthly"
+$7.99 and a $0 "Gold Level Free Trial"; the lifetime purchase a third-party page mentions is not
+in the store's list, so it stays unconfirmed. MARKET.md carries the note.
 
 ## Letter 1: to a teacher at an astrology school
 
