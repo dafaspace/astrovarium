@@ -109,12 +109,20 @@ Hours saved on his own work: none.
 - **Reputation - partly.** AstroTrip is on dafaspace.com as "Beta" with a link to the web app. A
   case with the JPL check and the store link comes after the listing.
 
-**Testers get full access for the beta, free.** **[decided 29 Oct, narrowed the same day]** Not
-"for life": whether testers keep the paid part when the app splits into free and paid is not
-decided, so nothing they see promises it. On the web a key with no end date (`issue life`), which
-the app calls "full access for the beta". In the App Store build a key may not unlock features
-(guideline 3.1.1); there it is an Apple offer code for the one-time unlock, tried in the sandbox
-first **[fact from _HQ, 29 Oct, not yet read on Apple's page by this session]**. Where they come from and the letters to them:
+**What one payment buys, said plainly from day one.** **[decided 29 Oct, Dafa in the _HQ session,
+"1 да, 2 А"]** One payment buys the current major version, Astrovarium 1, with all its updates, for
+good, working offline. Accuracy fixes are always free. A future major version with substantially
+new capabilities is a paid upgrade, with a discount for owners. This goes on the purchase screen
+and in the store listing, so "one payment" is never ambiguous: TimePassages sold "lifetime" and
+then moved its owners to a subscription, and that is the grievance we are not to repeat.
+
+**Founding testers, those who complete the beta task.** **[decided 29 Oct, same answers]**
+Astrovarium 1 free for good, the next major version free as well, then 50% off every later major
+version for good, and their name in the "Thanks to" credits if they agree. During the beta the web
+key says "Full access for the beta", because it is the beta's key; after it, lasting access goes
+out as an Apple offer code for the one-time unlock in the store build (no key may unlock anything
+there, guideline 3.1.1; codes tried in the sandbox first) and, on the web, as a key with no end
+labelled as a founding-tester licence. Where testers come from and the letters to them:
 `docs/outreach-testers-2026-10.md`.
 
 **6. The number and the date.**
