@@ -65,6 +65,30 @@ affected: their storage lives inside the app.
    - then on a real iPhone (Dafa): old shortcut, bridge, new site, new shortcut. Are the charts
      there?
    The result goes here, and the verdict goes to Dafa with the plan.
+
+   **Simulator result, 3 Nov 2026** (iPhone 17 Pro, iOS 26.5; the old site and the bridge on
+   127.0.0.1:3112/astrotrip/, the new app on localhost:3111; 1019 charts with notes):
+   - The old shortcut opens the bridge in place of the app: the old service worker fetches the
+     page network-first. The bridge sees 1019 charts.
+   - "Open" opens the new address in a view inside the old shortcut. The charts, the language
+     and the theme arrive, but in **the old shortcut's storage**. Safari at the same address is
+     empty.
+   - A new shortcut opens **empty**: added from Safari, or from the share sheet of that view.
+     _HQ's worry was right.
+   - **The file works end to end.** "Save charts as a file" in the old shortcut gives the share
+     sheet with `astrovarium-charts-<date>.csv` (109 KB) and Save to Files. In the new
+     shortcut, Library > Import CSV > the file: "Charts imported: 1019", notes included.
+   - So on an iPhone shortcut the bridge leads with the file: it is the main button, and the
+     text says what to do. The first empty start of the new shortcut offers the import once.
+     That offer was not seen in the simulator, because the shortcut served its cached page; it
+     is to be checked on the device. The CSV does not carry the settings or the key. The key
+     link opens on the new address.
+   - **Desktop and Android** (Browser pane, which runs Chrome): the automatic path works. 1019
+     charts, notes, settings and the key arrive. Nothing is doubled when the bridge is used
+     twice. The `#key=` link is carried on. The address ends clean.
+   - Not testable in the Browser pane: the service-worker swap. The pane does not register
+     service workers. In the simulator the old shortcut did reach the bridge.
+   - Still for a real iPhone (Dafa): the same chain, plus the import offer.
 2. **Size: measured, it fits.** The 1019-chart test library (`test-sample.json`) is 105 KB of
    JSON, which comes to 186 KB as a plain URL fragment and 30 KB once compressed with
    deflate-raw and base64url. The bridge compresses with `CompressionStream('deflate-raw')`

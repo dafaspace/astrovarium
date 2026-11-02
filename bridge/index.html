@@ -1,0 +1,123 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Astrovarium has moved</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Astrovarium">
+<meta name="robots" content="noindex">
+<!--
+  The bridge left at dafaspace.github.io/astrotrip/ after the move to
+  astrovarium.com (docs/domain-move-2026-11.md in the app's repo). Browser
+  storage belongs to one address, so this page is the only thing that can still
+  read what a person saved here. It hands it over in the new address's #move=,
+  compressed; the fragment never reaches a server. Keep it until Nov 2027 at
+  least: home-screen shortcuts outlive plans.
+-->
+<style>
+:root{--bg:#f9f7f3;--fg:#1c1b22;--mut:#5e5a66;--acc:#9a6b12;--line:#d9d4ca}
+@media (prefers-color-scheme:dark){:root{--bg:#100f17;--fg:#ece9f2;--mut:#a29eae;--acc:#e0b354;--line:#2c2a36}}
+html{background:var(--bg);color:var(--fg);font:17px/1.45 system-ui,-apple-system,sans-serif}
+body{margin:0;padding:max(48px,env(safe-area-inset-top)) 20px 40px;max-width:460px;margin-inline:auto}
+h1{font-weight:500;font-size:1.5rem;margin:0 0 .6em}
+p{margin:0 0 1em;color:var(--mut)}
+button,a.btn{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;
+  min-height:48px;padding:.6em 1.1em;margin:0 0 12px;font:inherit;line-height:1;border-radius:12px;
+  border:1px solid var(--line);background:transparent;color:var(--fg);text-decoration:none;
+  -webkit-appearance:none;appearance:none;text-box:trim-both cap alphabetic;cursor:pointer}
+.btn.main{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+#note{font-size:.9rem;min-height:1.4em}
+</style>
+<body>
+<h1 id="h">Astrovarium has moved</h1>
+<p id="p">The app now lives at <b>astrovarium.com</b>.</p>
+<a class="btn main" id="go" href="https://astrovarium.com/">Open astrovarium.com</a>
+<button class="btn" id="save" hidden>Save my charts as a file</button>
+<p id="note"></p>
+<script>
+(function(){
+  /* Only these two addresses, never one taken from the URL: the page carries
+     birth data, so it must not be told where to send it. The second pair is
+     the local test (two origins, as in production). */
+  var TO={'dafaspace.github.io':'https://astrovarium.com/','127.0.0.1':'http://localhost:3111/'};
+  var target=TO[location.hostname]||'https://astrovarium.com/';
+  var S={
+    en:['Astrovarium has moved','The app now lives at astrovarium.com. Your saved charts and settings come with you when you open it from here.','Open astrovarium.com','Save my charts as a file','Your charts are also kept here, so you can come back.','Charts saved here: ','On iPhone the new address opens in Safari. Save the file first, then add astrovarium.com to the Home Screen and import the file in Library.'],
+    ru:['Astrovarium переехал','Теперь приложение живёт на astrovarium.com. Сохранённые карты и настройки переедут вместе с вами, если открыть его отсюда.','Открыть astrovarium.com','Сохранить карты в файл','Карты остаются и здесь, сюда можно вернуться.','Сохранено здесь карт: ','На iPhone новый адрес откроется в Safari. Сначала сохраните файл, потом добавьте astrovarium.com на экран «Домой» и загрузите файл в Библиотеке.'],
+    es:['Astrovarium se ha mudado','La app vive ahora en astrovarium.com. Tus cartas y ajustes van contigo si la abres desde aquí.','Abrir astrovarium.com','Guardar mis cartas en un archivo','Tus cartas siguen también aquí, puedes volver.','Cartas guardadas aquí: ','En iPhone la nueva dirección se abre en Safari. Guarda primero el archivo, añade astrovarium.com a la pantalla de inicio e importa el archivo en la Biblioteca.'],
+    fr:['Astrovarium a déménagé','L’app est désormais sur astrovarium.com. Vos cartes et réglages vous suivent si vous l’ouvrez d’ici.','Ouvrir astrovarium.com','Enregistrer mes cartes dans un fichier','Vos cartes restent aussi ici, vous pouvez revenir.','Cartes enregistrées ici : ','Sur iPhone la nouvelle adresse s’ouvre dans Safari. Enregistrez d’abord le fichier, ajoutez astrovarium.com à l’écran d’accueil et importez le fichier dans la Bibliothèque.'],
+    de:['Astrovarium ist umgezogen','Die App ist jetzt unter astrovarium.com. Gespeicherte Charts und Einstellungen kommen mit, wenn Sie sie von hier öffnen.','astrovarium.com öffnen','Meine Charts als Datei sichern','Ihre Charts bleiben auch hier, Sie können zurückkommen.','Hier gespeicherte Charts: ','Auf dem iPhone öffnet sich die neue Adresse in Safari. Sichern Sie zuerst die Datei, legen Sie astrovarium.com auf den Home-Bildschirm und importieren Sie die Datei in der Bibliothek.'],
+    it:['Astrovarium si è trasferito','L’app ora è su astrovarium.com. Le carte e le impostazioni salvate vengono con te se la apri da qui.','Apri astrovarium.com','Salva le mie carte in un file','Le carte restano anche qui, puoi tornare.','Carte salvate qui: ','Su iPhone il nuovo indirizzo si apre in Safari. Salva prima il file, aggiungi astrovarium.com alla schermata Home e importa il file nella Libreria.'],
+    uk:['Astrovarium переїхав','Тепер застосунок живе на astrovarium.com. Збережені карти й налаштування переїдуть разом із вами, якщо відкрити його звідси.','Відкрити astrovarium.com','Зберегти карти у файл','Карти лишаються й тут, сюди можна повернутися.','Збережено тут карт: ','На iPhone нова адреса відкриється в Safari. Спершу збережіть файл, потім додайте astrovarium.com на екран «Додому» і завантажте файл у Бібліотеці.'],
+    ka:['Astrovarium გადავიდა','აპი ახლა astrovarium.com-ზეა. შენახული რუკები და პარამეტრები თან გადაგყვებათ, თუ აქედან გახსნით.','astrovarium.com-ის გახსნა','რუკების ფაილად შენახვა','რუკები აქაც რჩება, შეგიძლიათ დაბრუნდეთ.','აქ შენახული რუკები: ','iPhone-ზე ახალი მისამართი Safari-ში გაიხსნება. ჯერ შეინახეთ ფაილი, მერე astrovarium.com დაამატეთ მთავარ ეკრანზე და ფაილი შემოიტანეთ ბიბლიოთეკაში.']
+  };
+  var keys={}, charts=[];
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.indexOf('astrarium_')===0) keys[k]=localStorage.getItem(k);
+    }
+    charts=JSON.parse(keys.astrarium_charts||'[]')||[];
+  }catch(e){}
+  var lang=keys.astrarium_lang||(navigator.language||'en').slice(0,2);
+  var L=S[lang]||S.en;
+  var km=/^#key=([A-Za-z0-9_-]+)$/.exec(location.hash), link=km?km[1]:'';
+  var iosHome=navigator.standalone===true;
+  var $=function(id){return document.getElementById(id)};
+  document.documentElement.lang=S[lang]?lang:'en';
+  document.title=L[0]; $('h').textContent=L[0]; $('p').textContent=L[1];
+  $('go').textContent=L[2]; $('save').textContent=L[3];
+
+  /* Nothing saved here: nothing to carry, so straight on. */
+  if(!Object.keys(keys).length){ location.replace(target+(link?'#key='+link:'')); return; }
+
+  $('note').textContent=charts.length?L[5]+charts.length+'. '+L[4]:'';
+  if(charts.length) $('save').hidden=false;
+  /* Measured in the iOS Simulator, 3 Nov 2026: from a home-screen shortcut the
+     #move= hand-over lands in the old shortcut's own storage, and a new
+     shortcut for astrovarium.com starts empty, even one added from inside the
+     old. So on an iPhone shortcut the file is the way, and it goes first. */
+  if(iosHome&&charts.length){
+    $('note').textContent=L[5]+charts.length+'. '+L[6];
+    $('p').textContent=L[1].split('. ')[0]+'.';   // the first sentence only: here nothing moves by itself
+    $('save').className='btn main'; $('go').className='btn';
+    $('save').parentNode.insertBefore($('save'),$('go'));
+  }
+
+  /* deflate-raw, then base64url: 1019 charts come to about 30 KB. */
+  function pack(){
+    if(typeof CompressionStream!=='function') return Promise.reject();
+    var s=new Blob([JSON.stringify({keys:keys,link:link})]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    return new Response(s).arrayBuffer().then(function(buf){
+      var b=new Uint8Array(buf), bin='';
+      for(var i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));
+      return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    });
+  }
+  pack().then(function(enc){ $('go').href=target+'#move='+enc; },
+    function(){ $('go').href=target+(link?'#key='+link:''); $('save').hidden=!charts.length; });
+
+  /* The same CSV the app writes (libToCsv), so its Import reads it back. */
+  var pad2=function(x){return String(x).padStart(2,'0')};
+  var hhmm=function(h){var t=Math.round(h*60);return pad2(Math.floor(t/60)%24)+':'+pad2(((t%60)+60)%60)};
+  var off=function(h){var sg=h<0?'-':'+',s=Math.round(Math.abs(h)*3600),ss=s%60;
+    return sg+pad2(Math.floor(s/3600))+':'+pad2(Math.floor(s%3600/60))+(ss?':'+pad2(ss):'')};
+  var cell=function(v){var s=v==null?'':String(v);return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  function csv(){
+    var lines=['﻿name,date,time,utc_offset,latitude,longitude,city,rodden,source,note'];
+    charts.forEach(function(e){ lines.push([e.name,String(e.y).padStart(4,'0')+'-'+pad2(e.mo)+'-'+pad2(e.d),
+      e.t==null?'':hhmm(e.t),e.tz==null?'':off(e.tz),e.lat,e.lon,e.city||'',e.rr||'',e.src||'',e.note||''
+    ].map(cell).join(',')); });
+    return lines.join('\r\n')+'\r\n';
+  }
+  $('save').addEventListener('click',function(){
+    var d=new Date(), name='astrovarium-charts-'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'.csv';
+    var file=new File([csv()],name,{type:'text/csv'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){ navigator.share({files:[file]}).catch(function(){}); return; }
+    var a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function(){});
+})();
+</script>
+</body>

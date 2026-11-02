@@ -2,6 +2,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Astrovarium</title>
 <script>
+/* The move from dafaspace.github.io/astrotrip/ (docs/domain-move-2026-11.md).
+   Browser storage belongs to one address, so the bridge left at the old one
+   packs every astrarium_* key into #move=, compressed. Here it is unpacked
+   before anything else reads storage. A key already here before this load is
+   kept; saved charts are joined by id, so nothing on either side is lost. Then
+   the page loads again on a clean address: the birth data leaves the history
+   and every setting starts from the moved values. A key link that came through
+   the bridge is put back as #key=, which is where the app expects it. */
+(function(){
+  var m=/^#move=([A-Za-z0-9_-]+)$/.exec(location.hash);
+  if(!m||typeof DecompressionStream!=='function') return;
+  var had={}; try{ for(var i=0;i<localStorage.length;i++) had[localStorage.key(i)]=1; }catch(e){ return; }
+  var b64=m[1].replace(/-/g,'+').replace(/_/g,'/');
+  var bin=atob(b64+'==='.slice((b64.length+3)%4)), bytes=new Uint8Array(bin.length);
+  for(var j=0;j<bin.length;j++) bytes[j]=bin.charCodeAt(j);
+  new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()
+    .then(function(txt){
+      var data=JSON.parse(txt), keys=data.keys||{}, moved=0, link=data.link||'';
+      Object.keys(keys).forEach(function(k){
+        if(k.indexOf('astrarium_')!==0||typeof keys[k]!=='string') return;
+        if(k==='astrarium_charts'){
+          var mine=[]; try{ mine=JSON.parse(localStorage.getItem(k))||[]; }catch(e){}
+          var ids={}; mine.forEach(function(c){ ids[c.id]=1; });
+          var theirs=[]; try{ theirs=JSON.parse(keys[k])||[]; }catch(e){}
+          var add=theirs.filter(function(c){ return c&&c.id&&!ids[c.id]; });
+          moved=add.length;
+          if(add.length){ localStorage.setItem(k,JSON.stringify(mine.concat(add))); localStorage.setItem('astrarium_charts_at',String(Date.now())); }
+        } else if(!had[k]&&k!=='astrarium_charts_at') localStorage.setItem(k,keys[k]);
+      });
+      try{ sessionStorage.setItem('astrarium_moved',String(moved)); }catch(e){}
+      /* replaceState and then reload, not location.replace: from #move= to
+         #key= is a change of fragment only, which reloads nothing. */
+      history.replaceState(null,'',location.pathname+(/^[A-Za-z0-9_-]+$/.test(link)?'#key='+link:''));
+      location.reload();
+    }).catch(function(){ history.replaceState(null,'',location.pathname); });
+})();
 /* Runs before any paint so the page never flashes the wrong theme. Until the
    switch is touched there is nothing stored and the system decides; after
    that the stored choice holds. */
@@ -1474,6 +1510,8 @@ const STR = {
   importCsv:{ru:'Загрузить CSV',en:'Import CSV'},
   importDone:{ru:'Загружено карт: ',en:'Charts imported: '},
   importBad:{ru:'Не удалось прочитать файл как CSV.',en:'Could not read that file as CSV.'},
+  movedDone:{ru:'Перенесено со старого адреса карт: ',en:'Charts moved from the old address: '},
+  movedHint:{ru:'Сохраняли карты в файл на старом адресе? Загрузите его сюда.',en:'Saved your charts to a file at the old address? Import it here.'},
   /* atlas */
   learned:{ru:'Что Astrovarium узнал о вас',en:'What Astrovarium has learned about you'},
   forget:{ru:'Забыть всё',en:'Forget everything'},
@@ -1634,7 +1672,7 @@ const I18N={
     hemi:"Hemisferios", hemi_e:"Este", hemi_w:"Oeste", hemi_n:"Norte", hemi_s:"Sur",
     balnote:"Diez planetas más el Ascendente y el Medio Cielo, cada cuerpo con el mismo peso. Los hemisferios van por casas: el este son las casas 10-3, el sur son las casas 7-12.",
     exportCsv:"Exportar CSV", importCsv:"Importar CSV", importDone:"Cartas importadas: ",
-    importBad:"No se pudo leer ese archivo como CSV.", orb:"orbe", house:"casa",
+    importBad:"No se pudo leer ese archivo como CSV.", movedDone:"Cartas traídas de la dirección anterior: ", movedHint:"¿Guardaste tus cartas en un archivo en la dirección anterior? Impórtalo aquí.", orb:"orbe", house:"casa",
     noaspects:"No hay aspectos mayores dentro del orbe.",
     notransits:"Ahora mismo no hay nada dentro del orbe.",
     foot:"Las posiciones están cotejadas con JPL Horizons en 1550-2250: la diferencia no supera 0,25 segundos de arco. Atlas de ciudades de GeoNames, CC BY 4.0. Tras la primera carga nada de aquí sale a la red.",
@@ -1687,7 +1725,7 @@ const I18N={
     hemi:"Hémisphères", hemi_e:"Est", hemi_w:"Ouest", hemi_n:"Nord", hemi_s:"Sud",
     balnote:"Dix planètes plus l’Ascendant et le Milieu du Ciel, chaque corps du même poids. Les hémisphères se lisent par maisons : l’est ce sont les maisons 10 à 3, le sud les maisons 7 à 12.",
     exportCsv:"Exporter en CSV", importCsv:"Importer un CSV", importDone:"Cartes importées : ",
-    importBad:"Impossible de lire ce fichier comme un CSV.", orb:"orbe", house:"maison",
+    importBad:"Impossible de lire ce fichier comme un CSV.", movedDone:"Cartes reprises de l’ancienne adresse : ", movedHint:"Vous avez enregistré vos cartes dans un fichier à l’ancienne adresse ? Importez-le ici.", orb:"orbe", house:"maison",
     noaspects:"Aucun aspect majeur dans l’orbe.", notransits:"Rien dans l’orbe pour le moment.",
     foot:"Les positions sont vérifiées avec JPL Horizons sur 1550-2250 : l’écart ne dépasse pas 0,25 seconde d’arc. Atlas des villes : GeoNames, CC BY 4.0. Après le premier chargement, rien ici ne contacte le réseau.",
   },
@@ -1738,7 +1776,7 @@ const I18N={
     hemi:"Hemisphären", hemi_e:"Ost", hemi_w:"West", hemi_n:"Nord", hemi_s:"Süd",
     balnote:"Zehn Planeten plus Aszendent und Medium Coeli, jeder Körper gleich gewichtet. Die Hemisphären gehen nach Häusern: Ost sind die Häuser 10 bis 3, Süd die Häuser 7 bis 12.",
     exportCsv:"CSV exportieren", importCsv:"CSV importieren", importDone:"Importierte Charts: ",
-    importBad:"Diese Datei ließ sich nicht als CSV lesen.", orb:"Orbis", house:"Haus",
+    importBad:"Diese Datei ließ sich nicht als CSV lesen.", movedDone:"Von der alten Adresse übernommene Charts: ", movedHint:"Charts an der alten Adresse als Datei gesichert? Hier importieren.", orb:"Orbis", house:"Haus",
     noaspects:"Keine Hauptaspekte im Orbis.", notransits:"Im Moment nichts im Orbis.",
     foot:"Die Positionen sind über 1550-2250 gegen JPL Horizons geprüft: die Abweichung bleibt unter 0,25 Bogensekunden. Städte-Atlas von GeoNames, CC BY 4.0. Nach dem ersten Laden geht von hier nichts mehr ins Netz.",
   },
@@ -1789,7 +1827,7 @@ const I18N={
     hemi:"Emisferi", hemi_e:"Est", hemi_w:"Ovest", hemi_n:"Nord", hemi_s:"Sud",
     balnote:"Dieci pianeti più l’Ascendente e il Medio Cielo, ogni corpo con lo stesso peso. Gli emisferi vanno per case: est sono le case 10-3, sud le case 7-12.",
     exportCsv:"Esporta CSV", importCsv:"Importa CSV", importDone:"Carte importate: ",
-    importBad:"Non sono riuscito a leggere quel file come CSV.", orb:"orbe", house:"casa",
+    importBad:"Non sono riuscito a leggere quel file come CSV.", movedDone:"Carte portate dal vecchio indirizzo: ", movedHint:"Hai salvato le carte in un file al vecchio indirizzo? Importalo qui.", orb:"orbe", house:"casa",
     noaspects:"Nessun aspetto maggiore entro l’orbe.", notransits:"Al momento non c’è nulla entro l’orbe.",
     foot:"Le posizioni sono confrontate con JPL Horizons sul 1550-2250: lo scarto non supera 0,25 secondi d’arco. Atlante delle città da GeoNames, CC BY 4.0. Dopo il primo caricamento nulla di qui va in rete.",
   },
@@ -1839,7 +1877,7 @@ const I18N={
     hemi:"Півкулі", hemi_e:"Схід", hemi_w:"Захід", hemi_n:"Низ", hemi_s:"Верх",
     balnote:"Рахуються десять планет плюс Асцендент і MC, кожне тіло важить однаково. Півкулі - за домами: схід це доми 10-3, верх це доми 7-12.",
     exportCsv:"Вивантажити CSV", importCsv:"Завантажити CSV", importDone:"Завантажено карт: ",
-    importBad:"Не вдалося прочитати файл як CSV.", orb:"орбіс", house:"дім",
+    importBad:"Не вдалося прочитати файл як CSV.", movedDone:"Перенесено зі старої адреси карт: ", movedHint:"Зберігали карти у файл на старій адресі? Завантажте його сюди.", orb:"орбіс", house:"дім",
     noaspects:"Великих аспектів в орбісі немає.", notransits:"Зараз нічого в орбісі немає.",
     foot:"Положення звірені з JPL Horizons на 1550-2250 роках: розбіжність не більша за 0,25 секунди дуги. Атлас міст - GeoNames, CC BY 4.0. Після першого завантаження ніщо звідси не виходить у мережу.",
   },
@@ -1889,7 +1927,7 @@ const I18N={
     hemi:"ნახევარსფეროები", hemi_e:"აღმოსავლეთი", hemi_w:"დასავლეთი", hemi_n:"ქვემოთ", hemi_s:"ზემოთ",
     balnote:"ათი პლანეტა პლუს ასცენდენტი და MC, თითოეული სხეული თანაბარი წონით. ნახევარსფეროები სახლების მიხედვით: აღმოსავლეთი არის სახლები 10-3, ზემოთ - სახლები 7-12.",
     exportCsv:"CSV-ის გატანა", importCsv:"CSV-ის შემოტანა", importDone:"შემოტანილი რუკები: ",
-    importBad:"ფაილის CSV-ად წაკითხვა ვერ მოხერხდა.", orb:"ორბისი", house:"სახლი",
+    importBad:"ფაილის CSV-ად წაკითხვა ვერ მოხერხდა.", movedDone:"ძველი მისამართიდან გადმოტანილი რუკები: ", movedHint:"ძველ მისამართზე რუკები ფაილად შეინახეთ? შემოიტანეთ აქ.", orb:"ორბისი", house:"სახლი",
     noaspects:"ორბისში მთავარი ასპექტები არ არის.", notransits:"ამჟამად ორბისში არაფერია.",
     foot:"პოზიციები შედარებულია JPL Horizons-თან 1550-2250 წლებზე: სხვაობა არ აღემატება რკალის 0,25 წამს. ქალაქების ატლასი - GeoNames, CC BY 4.0. პირველი ჩატვირთვის შემდეგ აქედან ქსელში არაფერი გადის.",
   },
@@ -9824,6 +9862,18 @@ if(!keyFromAddress()){
   if(saved) applyAccessKey(saved,false,true);
 }
 renderAccess();
+/* Said once, on the load that follows the move (the script at the top). */
+try{
+  const mv=sessionStorage.getItem('astrarium_moved');
+  if(mv!==null){ sessionStorage.removeItem('astrarium_moved'); toast(t('movedDone')+mv); }
+  /* A new home-screen shortcut on an iPhone starts with empty storage of its
+     own, so charts from the old address arrive only as the file the bridge
+     saved. Offered once, on the first empty start of such a shortcut. */
+  else if(navigator.standalone===true&&!savedCharts().length&&!localStorage.getItem('astrarium_import_hint')){
+    localStorage.setItem('astrarium_import_hint','1');
+    setTimeout(()=>toast(t('movedHint'),t('importCsv'),()=>document.getElementById('impFile').click()),600);
+  }
+}catch(e){}
 
 /* ---------- the tester's report ----------
    Dafa, 14 Oct 2026: every person given a key should leave behind what they used.
