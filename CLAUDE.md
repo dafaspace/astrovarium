@@ -138,7 +138,10 @@ key says "Full access for the beta", because it is the beta's key; after it, las
 out as an Apple offer code for the one-time unlock in the store build (no key may unlock anything
 there, guideline 3.1.1; codes tried in the sandbox first) and, on the web, as a key with no end
 labelled as a founding-tester licence. Where testers come from and the letters to them:
-`docs/outreach-testers-2026-10.md`.
+`docs/outreach-testers-2026-10.md`. **[decided 3 Nov]** No more than 20 founding testers, by
+personal invitation only. No founders page or badge for now; later a "Testimonials" block, made
+only from testers who agree to give a review, quoted word for word with their consent. The price
+is not shown on the site or in the app until the App Store Connect record exists.
 
 **6. The number and the date.**
 How many of the 10-20 invited astrologers answer yes at $29.99 on the price ladder, checked on
