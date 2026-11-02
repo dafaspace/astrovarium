@@ -50,6 +50,35 @@ affected: their storage lives inside the app.
 - An installed PWA (Chrome desktop) opens the bridge and arrives.
 - The old key link `dafaspace.github.io/astrotrip/#key=...` still opens access.
 
+## _HQ's four checks (3 Nov), and where each stands
+
+1. **iPhone home-screen shortcut: open, the deciding test.** WebKit gives a home-screen web app
+   storage of its own, apart from Safari. So the chain old shortcut, bridge, new site may import
+   the charts into Safari's storage, and a new shortcut added afterwards may start empty. Until a
+   test says otherwise the bridge assumes the worst on iOS: when it runs as a home-screen app
+   (`navigator.standalone`) it does not redirect on its own. It shows "Save your charts as a file"
+   first, then "Open the new address", and the new site, opened empty from a new shortcut, offers
+   "Import charts from a file" on its first screen.
+   The test, start to end, with a real library:
+   - first in the iOS Simulator, with the bridge and the app served locally on two different
+     origins, before anything is pushed (session);
+   - then on a real iPhone (Dafa): old shortcut, bridge, new site, new shortcut. Are the charts
+     there?
+   The result goes here, and the verdict goes to Dafa with the plan.
+2. **Size: measured, it fits.** The 1019-chart test library (`test-sample.json`) is 105 KB of
+   JSON, which comes to 186 KB as a plain URL fragment and 30 KB once compressed with
+   deflate-raw and base64url. The bridge compresses with `CompressionStream('deflate-raw')`
+   (Safari 16.4+, Chrome 80+), and a browser without it is sent to the file path. 30 KB is far
+   inside what Chrome (2 MB) and Safari accept. Still to check: a real saved library with its
+   notes, which carries more fields per chart than the test sample. After the import
+   `history.replaceState` clears the fragment, so birth data does not stay in the history.
+3. **A way back: in the plan.** Before redirecting, the bridge offers "Save your charts as a file",
+   using the CSV export the app already has (`libToCsv`). The new site takes the same file
+   (`importCsvText`). Settings and the key are carried by the fragment. The key link from
+   `ACCESS-KEYS.md` also works on the new address, so if the fragment fails the key does not.
+4. **The bridge stays at least a year: agreed.** It is three static files at no cost. Review it no
+   earlier than Nov 2027, and only once the old address gets no visits.
+
 ## Said plainly
 
 - On iPhone a home-screen shortcut opens the bridge, but the new address opens in Safari rather than
