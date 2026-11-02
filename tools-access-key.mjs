@@ -28,7 +28,7 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 const KEYDIR = join(ROOT, 'mobile', 'keys');
 const PEM = join(KEYDIR, 'access-key.pem');
 const LOG = join(KEYDIR, 'issued-keys.log');
-const SITE = 'https://dafaspace.github.io/astrotrip/';
+const SITE = 'https://astrovarium.com/';
 const b64url = b => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 const [cmd = 'issue', ...args] = process.argv.slice(2);
