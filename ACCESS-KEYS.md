@@ -19,7 +19,7 @@
 вашего журнала:
 
 ```bash
-cd "/Users/dafa/Documents/My Apps/AstroTrip" && node tools-access-key.mjs issue 7 "Имя"
+cd "/Users/dafa/Documents/My Apps/AstroVarium" && node tools-access-key.mjs issue 7 "Имя"
 ```
 
 **2.** Хороший ответ выглядит так:
@@ -83,7 +83,7 @@ key:  AWrY...
 Каждый выданный ключ записывается в журнал: дата, имя, до какого числа и сам ключ.
 
 ```bash
-open -R "/Users/dafa/Documents/My Apps/AstroTrip/mobile/keys/issued-keys.log"
+open -R "/Users/dafa/Documents/My Apps/AstroVarium/mobile/keys/issued-keys.log"
 ```
 
 Откройте файл в TextEdit. **Отозвать ключ нельзя**: сервера нет, и сайт не знает, кому что
@@ -104,7 +104,7 @@ open -R "/Users/dafa/Documents/My Apps/AstroTrip/mobile/keys/issued-keys.log"
   (pCloud или внешний диск): там же лежит ключ подписи Android, его потеря ещё хуже.
 
   ```bash
-  open -R "/Users/dafa/Documents/My Apps/AstroTrip/mobile/keys"
+  open -R "/Users/dafa/Documents/My Apps/AstroVarium/mobile/keys"
   ```
 
   Копия от 14 октября лежит в pCloud: `pCloud Drive/Backups/AstroTrip-keys/2026-10-14`, с
