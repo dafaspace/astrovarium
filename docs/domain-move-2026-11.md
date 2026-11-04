@@ -110,3 +110,17 @@ affected: their storage lives inside the app.
   move.
 - A URL can carry a few megabytes; a thousand saved charts fit. Past that the bridge falls back to
   "export CSV here, import there".
+
+## Done, 4 Nov 2026
+
+- DNS at Cloudflare set by Dafa: astrovarium.com DNS only (grey), the four GitHub A records and
+  `www`; astrovarium.app proxied placeholder records with the Redirect Rule "to .com" (301, path and
+  query kept). Recorded in `_HQ/DOMAINS.md`; both in `SITES` of `_portfolio/check-sites.mjs`.
+- Repo `dafaspace/astrotrip` renamed to `dafaspace/astrovarium`, CNAME astrovarium.com, 3.22.0
+  live. GitHub certificate approved (to 2 Feb 2027, renews itself), HTTPS enforced:
+  http and www both answer 301 to https://astrovarium.com/.
+- New repo `dafaspace/astrotrip` serves the bridge at the old address.
+- Checked live in the Browser pane: a chart saved at dafaspace.github.io/astrotrip/ arrived at
+  astrovarium.com through the bridge, then the probe chart was removed from both. The nightly site
+  check run by hand: all answer.
+- Still for Dafa on a real iPhone: old shortcut, bridge, file, new shortcut, import.
