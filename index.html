@@ -1205,9 +1205,9 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 </div>
 
 
-<script src="./ephemeris.js?v=3.22.0"></script>
-<script src="./planets.js?v=3.22.0"></script>
-<script src="./moon.js?v=3.22.0"></script>
+<script src="./ephemeris.js?v=3.22.1"></script>
+<script src="./planets.js?v=3.22.1"></script>
+<script src="./moon.js?v=3.22.1"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -1216,7 +1216,7 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 
 /* Bump together with CACHE in sw.js: the two are the same release, and the
    number on screen is how you tell from a phone which one you are looking at. */
-const APP_VERSION='3.22.0';
+const APP_VERSION='3.22.1';
 document.getElementById('ver').textContent=APP_VERSION;
 
 /* ---------- feature flags ----------
@@ -7226,6 +7226,11 @@ let ACCESS_UNTIL=0;
    "for good": whether testers keep the paid part after the beta is not decided
    (Dafa, 29 Oct 2026), and a date eighty years out would promise it. */
 const betaKey=ms=>ms>=4102444800000;
+/* Keys handed out with an end date and later made beta keys, so the person keeps
+   the link they already have (Olga Rovnaya's 24 Oct key, Dafa 4 Nov 2026). The
+   SHA-256 of the key's 69 bytes, never the key: this file is public. */
+const BETA_EXTENDED=['6434393e400083fb6032ba850ab81e0fa89811ef050e6e7284d2753ba4b04938'];
+const BETA_UNTIL=0xFFFFFFFF*1000;
 function isPro(){ return inStoreShell()||ACCESS_UNTIL>Date.now(); }
 const fromB64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 /* A key is 69 bytes: version, the end date in seconds (4 bytes, big-endian), and
@@ -7249,8 +7254,11 @@ async function verifyAccessKey(code){
       /* Expired counts as not valid here, not at each caller: the first version
          returned the date and left the check to whoever asked, and a test caught
          an expired key passing. */
-      if(await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},key,b.slice(5),b.slice(0,5)))
+      if(await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},key,b.slice(5),b.slice(0,5))){
+        const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',b))].map(x=>x.toString(16).padStart(2,'0')).join('');
+        if(BETA_EXTENDED.includes(h)) return BETA_UNTIL;
         return until>Date.now()?until:0;
+      }
     }
   }catch(e){}
   return 0;
