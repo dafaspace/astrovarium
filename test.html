@@ -5493,6 +5493,18 @@ function run(){
       return Math.abs(got-want)<0.02?null:`${nm}: ${got.toFixed(2)} мин вместо ${want.toFixed(2)}`;}).filter(Boolean);
     return !bad.length||bad.join('; ');
   });
+  t('#6 пояса-ссылки до 1970 года берут свою историю из backzone, а не чужую',()=>{
+    const cases=[['Atlantic/Reykjavik',-21.94,1960,1,1,12,0,-60,'Рейкьявик 1960'],
+      ['Europe/Amsterdam',4.9,1920,6,1,12,0,79+32/60,'Амстердам, лето 1920'],
+      ['Europe/Amsterdam',4.9,1920,1,1,12,0,19+32/60,'Амстердам, зима 1920'],
+      ['Europe/Oslo',5.32,1890,6,1,12,0,5.32*4,'Берген 1890: местное время'],
+      ['Europe/Oslo',10.75,1930,1,1,12,0,60,'Осло 1930'],
+      ['Atlantic/Reykjavik',-21.94,1990,1,1,12,0,0,'Рейкьявик 1990: после 1970 из браузера']];
+    const bad=cases.map(([z,lon,y,mo,d,h,mi,want,nm])=>{
+      const got=ev(`placeOffset(${JSON.stringify(z)},${lon},${y},${mo},${d},${h},${mi})`)*60;
+      return Math.abs(got-want)<0.02?null:`${nm}: ${got.toFixed(2)} мин вместо ${want.toFixed(2)}`;}).filter(Boolean);
+    return !bad.length||bad.join('; ');
+  });
   t('#1 ручной пояс переживает перезапуск, а карта из библиотеки не берёт город, выбранный раньше',()=>{
     const r=ev(`(()=>{const keep=[SELECTED_CITY,TZ_AUTO,localStorage.getItem(FORM_KEY)];
       try{
