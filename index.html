@@ -3308,17 +3308,21 @@ const C_KMD=299792.458*86400;
 const MOON_FIX_ARGS={lon:['l','2D-l','2D','2l',"l'",'2F'],lat:['F','l+F','l-F','2D-F']};
 function moonFix(T){
   if(typeof MOON_FIX==='undefined') return [0,0];       // moon.js absent: the bare theory
+  /* Held at the edge outside 1550-2250 are the multipliers 1, Tc, Tc^2 only,
+     so the correction stops growing. The arguments run on with the real T:
+     taken from the held Tc they froze the periodic part into a constant. */
   const Tc=Math.max(-4.5,Math.min(2.5,T));
-  const D=5.198466741027443+7771.377146811758*Tc, Lp=-0.04312518020812495+628.301955168488*Tc,
-    L=2.3555558982657994+8328.691426955555*Tc, F=1.627905233371468+8433.466158130539*Tc;
+  const D=5.198466741027443+7771.377146811758*T, Lp=-0.04312518020812495+628.301955168488*T,
+    L=2.3555558982657994+8328.691426955555*T, F=1.627905233371468+8433.466158130539*T;
   const A={l:L,'2D-l':2*D-L,'2D':2*D,'2l':2*L,"l'":Lp,'2F':2*F,F,'l+F':L+F,'l-F':L-F,'2D-F':2*D-F};
   const sum=(c,args)=>{ if(c.length<3) return 0;
     let s=c[0]+c[1]*Tc+c[2]*Tc*Tc, i=3;
     for(const k of args) for(const p of [1,2]){ const tp=Tc**p; s+=c[i++]*tp*Math.sin(A[k])+c[i++]*tp*Math.cos(A[k]); }
     return s; };
   let fl=sum(MOON_FIX.lon,MOON_FIX_ARGS.lon), fb=sum(MOON_FIX.lat,MOON_FIX_ARGS.lat);
-  /* The rest, segment by segment, inside 1550-2250 only. Decoded the first
-     time the Moon is asked for. */
+  /* A second stage, segment by segment, if tools-moon.mjs ever writes one
+     (STAGE2). The shipped moon.js has none - that stage did not pay - so this
+     branch does not run; it is kept so a moon.js with MOON_CHEB just works. */
   if(typeof MOON_CHEB!=='undefined'){
     const C=MOON_CHEB;
     if(!C.L){ const dec=str=>{ const v=str.split(/,\s*/).map(x=>parseInt(x,36)*C.q), m=C.deg+1, out=[];
@@ -3414,10 +3418,14 @@ function asteroidXYZ(name,tm){
   const E=AST_LOADED&&window.AST_EPH&&window.AST_EPH[name];
   if(!E) return null;
   const jd=2451545.0+tm*365250;
-  if(jd<E.jd0||jd>E.jd0+E.seg*E.nseg) return null;
+  /* A day of grace each side, as the planets' fits have: light-time asks
+     for the position 15-25 minutes earlier, and on 1 January 1600 that fell
+     before the first segment and the asteroid left the chart. The end
+     segment's polynomial is good for a day past its edge. */
+  if(jd<E.jd0-1||jd>E.jd0+E.seg*E.nseg+1) return null;
   let i=Math.floor((jd-E.jd0)/E.seg);
   i=Math.max(0,Math.min(E.nseg-1,i));
-  const u=Math.max(-1,Math.min(1,2*(jd-(E.jd0+i*E.seg))/E.seg-1));
+  const u=Math.max(-1.01,Math.min(1.01,2*(jd-(E.jd0+i*E.seg))/E.seg-1));   // the day of grace extrapolates
   return [chebEval(E.c[i][0],u),chebEval(E.c[i][1],u),chebEval(E.c[i][2],u)];
 }
 
@@ -4209,7 +4217,10 @@ function computeChart(y,mo,day,localH,tzOff,lat,lng,withSpeed){
   const utH=localH-tzOff, d=dayNumber(y,mo,day,utH), pos={};
   /* Three clocks, and they are not interchangeable: the form gives UT, the
      series wants TT, and sidereal time wants UT again. */
-  const jdUT=2451543.5+d, jdTT=jdUT+deltaTsec(y,mo)/86400;
+  /* The leap second is decided by the UT month, not the birthplace's: an
+     evening birth east of Greenwich on 30 June is already 1 July... or not. */
+  const utDay=new Date((2451543.5+d-2440587.5)*86400000);
+  const jdUT=2451543.5+d, jdTT=jdUT+deltaTsec(utDay.getUTCFullYear(),utDay.getUTCMonth()+1)/86400;
   const Tc=(jdTT-2451545.0)/36525, tm=(jdTT-2451545.0)/365250;
   const [dpsi,deps]=nutation(Tc), eps=meanObliq(Tc)+deps, ecl=eps*R2D;
   const E=helioXYZ('ea',tm), V=earthVel(tm);
@@ -5036,11 +5047,15 @@ const aspectingBodies=pos=>WHEEL_BODIES.concat(ASPECT_POINTS).filter(p=>pos[p]);
 
 function aspectBetween(l1,l2,cap){
   let diff=Math.abs(rev(l1-l2)); if(diff>180) diff=360-diff;
+  /* The nearest aspect whose orb covers the gap, not the first in the list:
+     with orbs raised to 10-15 degrees neighbours overlap, and 52 degrees read
+     as a sextile at 8 when it is a quintile at 20' away. */
+  let best=null;
   for(const asp of ASPECTS){
     const orb=Math.abs(diff-asp.angle);
-    if(orb<=(cap==null?asp.orb:Math.min(asp.orb,cap))) return {asp,orb};
+    if(orb<=(cap==null?asp.orb:Math.min(asp.orb,cap))&&(!best||orb<best.orb)) best={asp,orb};
   }
-  return null;
+  return best;
 }
 function findAspects(pos){
   const out=[], B=aspectingBodies(pos);
@@ -7513,7 +7528,10 @@ function returnChart(ch,ms,body){
 
 /* ---------- the composite ----------
    Midpoint composite: every body sits at the nearer midpoint of the two
-   charts' positions, and the angles are the midpoint of the two sets. The
+   charts' positions. The MC is the midpoint of the two MCs, and the Ascendant
+   and houses are derived from that MC at the average latitude (the usual
+   reading, and what the help text says), not the midpoint of the two
+   Ascendants, which can be degrees away. The
    nearer one matters - taking the plain average of two longitudes puts a pair
    straddling 0 Aries on the opposite side of the wheel from where both of them
    are, which is the classic way this is got wrong.
@@ -7650,7 +7668,9 @@ function aspectOrbs(ch,tp){
          chart advances, so nothing needs narrowing and the orb you configured
          is the orb you get. */
       const cap=ringOrbCap(T,np);
-      for(const asp of ASPECTS){const orb=Math.abs(diff-asp.angle),maxo=Math.min(asp.orb,cap);if(orb<=maxo){hits.push({tp:T,np,asp,orb,maxo});break;}}
+      let best=null;   // the nearest, as in aspectBetween
+      for(const asp of ASPECTS){const orb=Math.abs(diff-asp.angle),maxo=Math.min(asp.orb,cap);if(orb<=maxo&&(!best||orb<best.orb)) best={tp:T,np,asp,orb,maxo};}
+      if(best) hits.push(best);
     });
   });
   return hits;
@@ -8178,13 +8198,18 @@ function chartBalance(ch){
     const s=Math.floor(rev(lon)/30);
     el[s%4]++; mo[s%3]++;
   });
+  /* By the axes, not by house number: in Whole Sign and Equal cusp 1 is not
+     the Ascendant nor cusp 10 the MC, so a body just above the horizon could
+     count as below. East is the half from MC to IC, below the half from Asc to
+     Dsc, both in order of the signs - as the sect fix reads the Sun. */
+  let nh=0;
   BODIES.forEach(p=>{
-    if(!ch.pos[p]) return;
-    const h=bodyHouse(ch,p);
-    if(h>=10||h<=3) hemi.e++; else hemi.w++;
-    if(h<=6) hemi.n++; else hemi.s++;
+    if(!ch.pos[p]) return; nh++;
+    const lon=ch.pos[p].lon;
+    if(rev(lon-ch.mc)<180) hemi.e++; else hemi.w++;
+    if(rev(lon-ch.asc)<180) hemi.n++; else hemi.s++;
   });
-  return {el,mo,hemi,total:bodies.filter(p=>p==='ASC'||p==='MC'||ch.pos[p]).length};
+  return {el,mo,hemi,nh,total:bodies.filter(p=>p==='ASC'||p==='MC'||ch.pos[p]).length};
 }
 function balBar(name,n,total,colour){
   const pct=total?Math.round(n/total*100):0;
@@ -8201,7 +8226,7 @@ function renderBalance(ch){
     MODE_KEYS.map((k,i)=>balBar(t(k),b.mo[i],b.total,'var(--accent)')).join(''));
   h+=grp(t('hemi'),
     [['hemi_e',b.hemi.e],['hemi_w',b.hemi.w],['hemi_n',b.hemi.n],['hemi_s',b.hemi.s]]
-      .map(([k,n])=>balBar(t(k),n,BODIES.length,'var(--ink3)')).join(''));
+      .map(([k,n])=>balBar(t(k),n,b.nh,'var(--ink3)')).join(''));
   document.getElementById('balance').innerHTML=h;
   /* The summary line carries the tally so the card answers without opening. */
   document.getElementById('balBrief').textContent=
