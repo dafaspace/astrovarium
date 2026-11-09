@@ -1235,9 +1235,9 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 </div>
 
 
-<script src="./ephemeris.js?v=3.22.4"></script>
-<script src="./planets.js?v=3.22.4"></script>
-<script src="./moon.js?v=3.22.4"></script>
+<script src="./ephemeris.js?v=3.22.5"></script>
+<script src="./planets.js?v=3.22.5"></script>
+<script src="./moon.js?v=3.22.5"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -1246,7 +1246,7 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 
 /* Bump together with CACHE in sw.js: the two are the same release, and the
    number on screen is how you tell from a phone which one you are looking at. */
-const APP_VERSION='3.22.4';
+const APP_VERSION='3.22.5';
 document.getElementById('ver').textContent=APP_VERSION;
 
 /* ---------- feature flags ----------
@@ -6087,7 +6087,18 @@ let WHEEL_LAST=null;
 let LIT_RING='inner';
 function redrawWheel(){ if(WHEEL_LAST) drawWheel(...WHEEL_LAST); }
 const swappedSyn=()=>RING_MODE==='synastry'&&RING_SWAP&&!!TR_CHART;
+/* During Play the wheel is redrawn every frame, and a tap lasts longer than a
+   frame: pointerdown and pointerup landed on two different svg copies, the
+   click went to the container, and touching a planet did nothing. While a
+   finger or the mouse is down on the wheel the redraw waits, and the frame it
+   skipped is drawn on release. */
+let WHEEL_HELD=false, WHEEL_PENDING=null;
+document.addEventListener('pointerdown',e=>{ if(PLAYING&&e.target.closest&&e.target.closest('#wheel')) WHEEL_HELD=true; });
+['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,()=>{
+  if(!WHEEL_HELD) return; WHEEL_HELD=false;
+  if(WHEEL_PENDING){ const a=WHEEL_PENDING; WHEEL_PENDING=null; setTimeout(()=>drawWheel(...a),0); } }));
 function drawWheel(ch,tr,t3=TR3_CHART){
+  if(WHEEL_HELD&&PLAYING){ WHEEL_PENDING=[ch,tr,t3]; return; }
   if(!tr) t3=null;                     // a third ring with no second is not a thing
   WHEEL_LAST=[ch,tr,t3];
   /* The inner ring is lit only by a highlight that belongs to it. */
@@ -6478,7 +6489,9 @@ function drawWheel(ch,tr,t3=TR3_CHART){
        takes that back, so a double click only zooms. */
     LAST_PICK={at:Date.now(),undo:()=>{ ISO=was.iso; CONF_ISO=was.conf; LIT_RING=was.ring;
       redrawWheel(); renderConfigurations(CONF_CH||ch);
-      if(ISO) showDetail(ISO,ch); else clearDetail(); }};
+      /* The card of the ring that is lit again: after an outer-ring pick it
+         showed your body of the same name instead of the partner's. */
+      if(ISO) showDetail(ISO,LIT_RING==='outer'&&tr?tr:ch); else clearDetail(); }};
   }
 
   /* Tap anywhere in the ring, not on the glyph itself. A drawn glyph is 19 px
@@ -6501,7 +6514,9 @@ function drawWheel(ch,tr,t3=TR3_CHART){
     /* In a tri-wheel the natal band is one ring nearer the centre, so its
        floor drops to 20 to keep about 61 units of depth, roughly 55 px on a
        phone: 40 would have left 41 units, under the 44 px floor. */
-    if(rad<(tri?20:40)||rad>rZodIn) return;
+    /* With full labels the aspect circle sits at rAsp, well outside 40, and a
+       tap among the aspect lines picked a planet: the floor follows it. */
+    if(rad<(rich?rAsp:(tri?20:40))||rad>rZodIn) return;
     if(tr&&rad>rNatScale+3) return;                  // above this the tap belongs to the transit ring
     const lon=rev(asc+180-Math.atan2(dy,dx)*R2D);
     let best=null, bestD=1e9;
@@ -8786,9 +8801,13 @@ function renderPrintRing(){
   const el=document.getElementById('printRing'); if(!el) return;
   if(!TR_CHART||RING_MODE==='none'){ el.textContent=''; return; }
   const modes=[RING_MODE].concat(TR3_CHART?[RING2_MODE]:[]).map(m=>t('ring_'+m));
-  let when='';
-  if(RING_MODE==='solar'||RING_MODE==='lunar'){ if(TR_CHART.returnMs!=null) when=momText(TR_CHART.returnMs,0)+' UT'; }
-  else if(!STATIC_RING.includes(RING_MODE)||TR3_CHART) when=momText(TR_MS,0)+' UT';
+  /* Every moment the wheel shows: the return's own, and in a tri-wheel the
+     transits' as well - the return branch used to win and drop the third
+     ring's moment from the paper. */
+  const whens=[];
+  if((RING_MODE==='solar'||RING_MODE==='lunar')&&TR_CHART.returnMs!=null) whens.push(momText(TR_CHART.returnMs,0)+' UT');
+  if((!STATIC_RING.includes(RING_MODE)&&RING_MODE!=='solar'&&RING_MODE!=='lunar')||TR3_CHART) whens.push(momText(TR_MS,0)+' UT');
+  const when=whens.join(' · ');
   el.textContent=[modes.join(' + '),when].filter(Boolean).join(' · ');
 }
 function scrollChartIntoView(){
