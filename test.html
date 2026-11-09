@@ -5343,7 +5343,9 @@ function run(){
       return [fmtPos(10.9999).html, fmtPos(29.99999).html, fmtPos(359.99999).html];
     }finally{SHOW_SECONDS=k;}})()`).map(h=>h.replace(/<[^>]+>/g,''));
     const bad=r.filter(h=>/60″|60′/.test(h));
-    return (!bad.length&&r[0].startsWith('11°00′00″')&&r[2].startsWith('0°00′00″'))||r.join(' | ');
+    /* Cut, not rounded, since 9 Nov (#20 #31): 10.9999° is 10°59′59″, and
+       359.99999° is still Pisces. What must never appear is 60. */
+    return (!bad.length&&r[0].startsWith('10°59′59″')&&r[2].startsWith('29°59′59″'))||r.join(' | ');
   });
   t('#18 цикл в экспорте записан стрелками с замыканием, как на экране',()=>{
     const r=ev(`(()=>{const ch=computeChart(2000,1,1,0,0,0,0); return chartExportText(ch);})()`);
@@ -5503,6 +5505,40 @@ function run(){
     const bad=cases.map(([z,lon,y,mo,d,h,mi,want,nm])=>{
       const got=ev(`placeOffset(${JSON.stringify(z)},${lon},${y},${mo},${d},${h},${mi})`)*60;
       return Math.abs(got-want)<0.02?null:`${nm}: ${got.toFixed(2)} мин вместо ${want.toFixed(2)}`;}).filter(Boolean);
+    return !bad.length||bad.join('; ');
+  });
+  t('#39 у каждой точки есть имя во всех языках',()=>{
+    const miss=ev(`(()=>{const keys=Object.keys(PLANET_NAME.en), out=[];
+      for(const l of LANGS){ const lg=Array.isArray(l)?l[0]:(l.code||l); const t=PLANET_NAME[lg]; if(!t){ out.push(lg+': нет таблицы'); continue; }
+        const m=keys.filter(k=>!t[k]); if(m.length) out.push(lg+': '+m.join(',')); } return out;})()`);
+    return !miss.length||miss.join('; ');
+  });
+  t('#21 время с секундами и год до 1000 доходят до полей формы',()=>{
+    const r=ev(`[clockText(10+59/60+45/3600),clockText(10+59/60+59.6/3600),clockText(14.5),clockHours('10:59:45')]`);
+    const bad=[];
+    if(r[0]!=='10:59:45') bad.push('10:59:45 дал '+r[0]);
+    if(r[1]!=='11:00') bad.push('10:59:59.6 дал '+r[1]);
+    if(r[2]!=='14:30') bad.push('14:30 дал '+r[2]);
+    if(Math.abs(r[3]-(10+59/60+45/3600))>1e-9) bad.push('разбор 10:59:45: '+r[3]);
+    const f=ev(`(()=>{const keep=[document.getElementById('date').value,document.getElementById('time').value];
+      try{ loadChartEntry({y:900,mo:3,d:1,t:10+59/60+45/3600,tz:0,lat:41.9,lon:12.5,city:'Roma',name:'t900'},true);
+        return [document.getElementById('date').value,document.getElementById('time').value]; }
+      finally{ document.getElementById('date').value=keep[0]; document.getElementById('time').value=keep[1]; run(); }})()`);
+    if(f[0]!=='0900-03-01') bad.push('поле даты: '+JSON.stringify(f[0]));
+    if(f[1]!=='10:59:45') bad.push('поле времени: '+JSON.stringify(f[1]));
+    return !bad.length||bad.join('; ');
+  });
+  t('#20 #31 положение отсекается, а не округляется, одинаково на экране и в тексте',()=>{
+    const r=ev(`(()=>{const k=SHOW_SECONDS; try{ SHOW_SECONDS=false;
+      const a=fmtPos(29.995), b=degText(29.995), c=fmtPos(15.9933), d=fmtPos(30);
+      SHOW_SECONDS=true; const e=degText(15.99999);
+      return {sa:a.sign,ha:a.html,b,hc:c.html,sd:d.sign,e}; } finally{ SHOW_SECONDS=k; }})()`);
+    const bad=[];
+    if(r.sa!==0||!r.ha.startsWith('29°59′')) bad.push('29°59.7′ Овна на экране: '+r.ha);
+    if(r.b!=='29°59′') bad.push('в тексте: '+r.b);
+    if(!r.hc.startsWith('15°59′')) bad.push('15°59.6′: '+r.hc);
+    if(r.sd!==1) bad.push('ровно 30° не Телец');
+    if(r.e!=='15°59′59″') bad.push('с секундами: '+r.e);
     return !bad.length||bad.join('; ');
   });
   t('#1 ручной пояс переживает перезапуск, а карта из библиотеки не берёт город, выбранный раньше',()=>{

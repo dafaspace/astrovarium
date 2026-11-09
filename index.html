@@ -4458,7 +4458,7 @@ const libTz=e=>{
      lookup: the instant is then right even where the coordinates are not. */
   if(e.tzo!=null) return e.tzo;
   const hh=e.t==null?12:e.t;
-  return placeOffset(e.z,e.lon,e.y,e.mo,e.d,Math.floor(hh),Math.round((hh%1)*60));
+  return placeOffset(e.z,e.lon,e.y,e.mo,e.d,Math.floor(hh),Math.floor((hh%1)*60));
 };
 const HOUSE_SYSTEMS={
   placidus:{ru:'Плацидус',en:'Placidus',fn:(ramc,lat,ecl,asc,mc)=>placidusCusps(ramc,lat,ecl,asc,mc)},
@@ -4953,11 +4953,23 @@ function chartFacts(ch,mode=RULER_MODE){
   return F;
 }
 let SHOW_SECONDS=localStorage.getItem('astrarium_seconds')==='1';
-function fmtPos(lon){
-  /* Rounded once, in the smallest unit shown, and then split - rounding the
-     seconds on their own printed 10°59′60″ for about one position in 120. */
+/* The degree within the sign as plain text, cut the same way as fmtPos and
+   honouring the seconds setting, so the chart as text, a copied position and
+   the screen give the same number. */
+function degText(lon){
   const unit=SHOW_SECONDS?3600:60;
-  let n=Math.round(rev(lon)*unit); if(n>=360*unit) n-=360*unit;
+  let n=Math.floor(rev(lon)*unit+1e-7)%(30*unit);
+  const dd=Math.floor(n/unit), rest=n-dd*unit;
+  return SHOW_SECONDS?`${dd}°${pad2(Math.floor(rest/60))}′${pad2(rest%60)}″`:`${dd}°${pad2(rest)}′`;
+}
+function fmtPos(lon){
+  /* Cut down, never rounded, in the smallest unit shown, and then split. A body
+     at 29°59.7′ Aries has not reached Taurus, and rounding printed "0°00′
+     Taurus" here while the wheel and the text, which cut, said Aries. Cutting
+     is also what Swiss Ephemeris, astro.com and Solar Fire print. The 1e-7 is
+     for a value that is exact in fact and a hair under it in floating point. */
+  const unit=SHOW_SECONDS?3600:60;
+  let n=Math.floor(rev(lon)*unit+1e-7); if(n>=360*unit) n-=360*unit;
   const s=Math.floor(n/(30*unit)); n-=s*30*unit;
   const dd=Math.floor(n/unit), rest=n-dd*unit;
   const mm=SHOW_SECONDS?Math.floor(rest/60):rest, ss=SHOW_SECONDS?rest%60:0;
@@ -6898,8 +6910,7 @@ function chartExportText(ch){
   if(!ch) return '';
   const F=factsOf(ch);
   const S=n=>LX(SIGN_NAME)[n];
-  const deg=lon=>{const d=rev(lon)%30;
-    return `${Math.floor(d)}°${String(Math.floor((d-Math.floor(d))*60)).padStart(2,'0')}′`;};
+  const deg=degText;
   const place=lon=>`${deg(lon)} ${S(signOfLon(lon))}`;
   const L=[];
 
@@ -7022,8 +7033,7 @@ function ringExportLines(ch,place){
 function placementLines(ch){
   const F=factsOf(ch);
   const S=n=>LX(SIGN_NAME)[n];
-  const deg=lon=>{const d=rev(lon)%30;
-    return `${Math.floor(d)}°${String(Math.floor((d-Math.floor(d))*60)).padStart(2,'0')}′`;};
+  const deg=degText;
   const place=lon=>`${deg(lon)} ${S(signOfLon(lon))}`;
   const L=[];
   WHEEL_BODIES.concat(FACT_POINTS).filter(p=>ch.pos[p]).forEach(p=>{
@@ -7765,6 +7775,13 @@ function momParts(ms){
     h:d.getUTCHours()+d.getUTCMinutes()/60+d.getUTCSeconds()/3600};
 }
 const pad2=x=>String(x).padStart(2,'0');
+/* A clock time from decimal hours, rounded once to the second and then split,
+   so 10:59:45 never prints as 10:60. Seconds appear only when there are some:
+   a CSV from Solar Fire carries them, and the form, the library row and the
+   export keep them instead of moving the birth by up to half a minute. */
+const clockText=h=>{ let s=Math.round(h*3600); s=((s%86400)+86400)%86400;
+  const S=s%60; return pad2(Math.floor(s/3600))+':'+pad2(Math.floor(s%3600/60))+(S?':'+pad2(S):''); };
+const clockHours=tv=>{ const [h,m,s]=tv.split(':').map(Number); return h+(m||0)/60+(s||0)/3600; };
 function momText(ms,offH){
   const d=new Date(ms+offH*3600000);
   const y=d.getUTCFullYear();
@@ -7852,7 +7869,7 @@ function renderPartnerLine(){
   const tz=e._own?e.tz:libTz(e);
   const hh=e.t==null?12:e.t;
   el.textContent=`${RING_SWAP?t('synaInner')+': ':''}${partnerName(e)} · ${String(e.d).padStart(2,'0')}.${String(e.mo).padStart(2,'0')}.${e.y}`
-    +` ${pad2(Math.floor(hh))}:${pad2(Math.round((hh%1)*60))}`
+    +` ${clockText(hh)}`
     +(e.t==null?` (${t('noTime')})`:'')
     +` · ${e._own?(e.city||''):LX(e.city)}`;
 }
@@ -8629,7 +8646,7 @@ function renderChartMeta(ch,y,mo,da,hh,mi,tz){
   const off=utcLabel(tz);
   const line1=[
     `<b>${String(da).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${y}</b>`
-      +` ${weekdayName(y,mo,da)} <b>${pad2(hh)}:${pad2(mi)}</b> ${off}`,
+      +` ${weekdayName(y,mo,da)} <b>${clockText(hh+mi/60)}</b> ${off}`,
     fmtGeo(ch.geolat,ch.geolon)+(RELOC?' '+t('relocMark'):'')
   ].filter(Boolean).join(' · ');
   /* "Geocentric" is dropped: it is the only thing this app computes, and a
@@ -8754,7 +8771,7 @@ function run(){
     if(dv&&tv) setGeoOpen(true);
     alert(t('needdata')); return false; }
   const [y,mo,da]=dv.split('-').map(Number);
-  const [hh,mi]=tv.split(':').map(Number);
+  const [hh,mi0,ss]=tv.split(':').map(Number), mi=mi0+(ss||0)/60;
   /* Kept so the same moment can be recast at another place. Relocation is
      cleared on a new chart: carrying it over silently would put the next
      person's houses in a city they never mentioned. */
@@ -9148,7 +9165,7 @@ function libRow(e,own){
   const date=`${String(e.d).padStart(2,'0')}.${String(e.mo).padStart(2,'0')}.${e.y}`;
   const time=e.t==null
     ? `<span class="libwarn">${t('noTime')}</span>`
-    : `<span class="libmeta">${String(Math.floor(e.t)).padStart(2,'0')}:${String(Math.round((e.t%1)*60)).padStart(2,'0')}</span>`
+    : `<span class="libmeta">${clockText(e.t)}</span>`
       + (e.rr==='AA'?` <span class="libwarn">${t('rrKnown')}</span>`:'');
   const del=own?`<button class="libdel" data-del="${escH(e.id)}">${t('delChart')}</button>`:'';
   const note=own?`<input class="libnote" data-note="${escH(e.id)}" value="${escH(e.note||'')}" placeholder="${t('chartNote')}">`:'';
@@ -9176,12 +9193,12 @@ const LIB_SORTS={
 /* Names for the added languages, attached to the tables the app already had.
    Assigned rather than merged into the literals above so those stay short and
    the two original languages stay easy to read next to each other. */
-PLANET_NAME.es={Sun:"Sol",Moon:"Luna",Mercury:"Mercurio",Venus:"Venus",Mars:"Marte",Jupiter:"Júpiter",Saturn:"Saturno",Uranus:"Urano",Neptune:"Neptuno",Pluto:"Plutón",Chiron:"Quirón",NNode:"Nodo Norte",SNode:"Nodo Sur",Lilith:"Lilith (Luna Negra)",Selena:"Selena (Luna Blanca)",ASC:"Ascendente",MC:"MC"};
-PLANET_NAME.fr={Sun:"Soleil",Moon:"Lune",Mercury:"Mercure",Venus:"Vénus",Mars:"Mars",Jupiter:"Jupiter",Saturn:"Saturne",Uranus:"Uranus",Neptune:"Neptune",Pluto:"Pluton",Chiron:"Chiron",NNode:"Nœud Nord",SNode:"Nœud Sud",Lilith:"Lilith (Lune Noire)",Selena:"Séléné (Lune Blanche)",ASC:"Ascendant",MC:"MC"};
-PLANET_NAME.de={Sun:"Sonne",Moon:"Mond",Mercury:"Merkur",Venus:"Venus",Mars:"Mars",Jupiter:"Jupiter",Saturn:"Saturn",Uranus:"Uranus",Neptune:"Neptun",Pluto:"Pluto",Chiron:"Chiron",NNode:"Aufsteigender Knoten",SNode:"Absteigender Knoten",Lilith:"Lilith (Schwarzer Mond)",Selena:"Selena (Weißer Mond)",ASC:"Aszendent",MC:"MC"};
-PLANET_NAME.it={Sun:"Sole",Moon:"Luna",Mercury:"Mercurio",Venus:"Venere",Mars:"Marte",Jupiter:"Giove",Saturn:"Saturno",Uranus:"Urano",Neptune:"Nettuno",Pluto:"Plutone",Chiron:"Chirone",NNode:"Nodo Nord",SNode:"Nodo Sud",Lilith:"Lilith (Luna Nera)",Selena:"Selena (Luna Bianca)",ASC:"Ascendente",MC:"MC"};
-PLANET_NAME.uk={Sun:"Сонце",Moon:"Місяць",Mercury:"Меркурій",Venus:"Венера",Mars:"Марс",Jupiter:"Юпітер",Saturn:"Сатурн",Uranus:"Уран",Neptune:"Нептун",Pluto:"Плутон",Chiron:"Хірон",NNode:"Північний вузол",SNode:"Південний вузол",Lilith:"Ліліт (Чорний Місяць)",Selena:"Селена (Білий Місяць)",ASC:"Асцендент",MC:"MC"};
-PLANET_NAME.ka={Sun:"მზე",Moon:"მთვარე",Mercury:"მერკური",Venus:"ვენერა",Mars:"მარსი",Jupiter:"იუპიტერი",Saturn:"სატურნი",Uranus:"ურანი",Neptune:"ნეპტუნი",Pluto:"პლუტონი",Chiron:"ქირონი",NNode:"ჩრდილოეთის კვანძი",SNode:"სამხრეთის კვანძი",Lilith:"ლილიტი (შავი მთვარე)",Selena:"სელენა (თეთრი მთვარე)",ASC:"ასცენდენტი",MC:"MC"};
+PLANET_NAME.es={Fortune:"Parte de la Fortuna",Ceres:"Ceres",Pallas:"Palas",Juno:"Juno",Vesta:"Vesta",Sun:"Sol",Moon:"Luna",Mercury:"Mercurio",Venus:"Venus",Mars:"Marte",Jupiter:"Júpiter",Saturn:"Saturno",Uranus:"Urano",Neptune:"Neptuno",Pluto:"Plutón",Chiron:"Quirón",NNode:"Nodo Norte",SNode:"Nodo Sur",Lilith:"Lilith (Luna Negra)",Selena:"Selena (Luna Blanca)",ASC:"Ascendente",MC:"MC"};
+PLANET_NAME.fr={Fortune:"Part de Fortune",Ceres:"Cérès",Pallas:"Pallas",Juno:"Junon",Vesta:"Vesta",Sun:"Soleil",Moon:"Lune",Mercury:"Mercure",Venus:"Vénus",Mars:"Mars",Jupiter:"Jupiter",Saturn:"Saturne",Uranus:"Uranus",Neptune:"Neptune",Pluto:"Pluton",Chiron:"Chiron",NNode:"Nœud Nord",SNode:"Nœud Sud",Lilith:"Lilith (Lune Noire)",Selena:"Séléné (Lune Blanche)",ASC:"Ascendant",MC:"MC"};
+PLANET_NAME.de={Fortune:"Glückspunkt",Ceres:"Ceres",Pallas:"Pallas",Juno:"Juno",Vesta:"Vesta",Sun:"Sonne",Moon:"Mond",Mercury:"Merkur",Venus:"Venus",Mars:"Mars",Jupiter:"Jupiter",Saturn:"Saturn",Uranus:"Uranus",Neptune:"Neptun",Pluto:"Pluto",Chiron:"Chiron",NNode:"Aufsteigender Knoten",SNode:"Absteigender Knoten",Lilith:"Lilith (Schwarzer Mond)",Selena:"Selena (Weißer Mond)",ASC:"Aszendent",MC:"MC"};
+PLANET_NAME.it={Fortune:"Parte di Fortuna",Ceres:"Cerere",Pallas:"Pallade",Juno:"Giunone",Vesta:"Vesta",Sun:"Sole",Moon:"Luna",Mercury:"Mercurio",Venus:"Venere",Mars:"Marte",Jupiter:"Giove",Saturn:"Saturno",Uranus:"Urano",Neptune:"Nettuno",Pluto:"Plutone",Chiron:"Chirone",NNode:"Nodo Nord",SNode:"Nodo Sud",Lilith:"Lilith (Luna Nera)",Selena:"Selena (Luna Bianca)",ASC:"Ascendente",MC:"MC"};
+PLANET_NAME.uk={Fortune:"Колесо Фортуни",Ceres:"Церера",Pallas:"Паллада",Juno:"Юнона",Vesta:"Веста",Sun:"Сонце",Moon:"Місяць",Mercury:"Меркурій",Venus:"Венера",Mars:"Марс",Jupiter:"Юпітер",Saturn:"Сатурн",Uranus:"Уран",Neptune:"Нептун",Pluto:"Плутон",Chiron:"Хірон",NNode:"Північний вузол",SNode:"Південний вузол",Lilith:"Ліліт (Чорний Місяць)",Selena:"Селена (Білий Місяць)",ASC:"Асцендент",MC:"MC"};
+PLANET_NAME.ka={Fortune:"ფორტუნას წერტილი",Ceres:"ცერერა",Pallas:"პალადა",Juno:"იუნონა",Vesta:"ვესტა",Sun:"მზე",Moon:"მთვარე",Mercury:"მერკური",Venus:"ვენერა",Mars:"მარსი",Jupiter:"იუპიტერი",Saturn:"სატურნი",Uranus:"ურანი",Neptune:"ნეპტუნი",Pluto:"პლუტონი",Chiron:"ქირონი",NNode:"ჩრდილოეთის კვანძი",SNode:"სამხრეთის კვანძი",Lilith:"ლილიტი (შავი მთვარე)",Selena:"სელენა (თეთრი მთვარე)",ASC:"ასცენდენტი",MC:"MC"};
 SIGN_NAME.es=["Aries", "Tauro", "Géminis", "Cáncer", "Leo", "Virgo", "Libra", "Escorpio", "Sagitario", "Capricornio", "Acuario", "Piscis"];
 SIGN_NAME.fr=["Bélier", "Taureau", "Gémeaux", "Cancer", "Lion", "Vierge", "Balance", "Scorpion", "Sagittaire", "Capricorne", "Verseau", "Poissons"];
 SIGN_NAME.de=["Widder", "Stier", "Zwillinge", "Krebs", "Löwe", "Jungfrau", "Waage", "Skorpion", "Schütze", "Steinbock", "Wassermann", "Fische"];
@@ -9378,8 +9395,8 @@ function renderLibrary(){
 function loadChartEntry(e,own){
   const tz=own?e.tz:libTz(e);
   const hh=e.t==null?12:e.t;
-  document.getElementById('date').value=`${e.y}-${String(e.mo).padStart(2,'0')}-${String(e.d).padStart(2,'0')}`;
-  document.getElementById('time').value=`${String(Math.floor(hh)).padStart(2,'0')}:${String(Math.round((hh%1)*60)).padStart(2,'0')}`;
+  document.getElementById('date').value=`${String(e.y).padStart(4,'0')}-${pad2(e.mo)}-${pad2(e.d)}`;
+  document.getElementById('time').value=clockText(hh);
   document.getElementById('lat').value=e.lat;
   document.getElementById('lng').value=e.lon;
   document.getElementById('tz').value=formatOffset(tz);
@@ -9439,7 +9456,7 @@ function formSaveName(){
    loaded from the library reads as saved, and the first edit undoes that. */
 function formIsSaved(){
   const d=formVal('date'), tm=formVal('time'); if(!d||!tm) return false;
-  const p=d.split('-').map(Number), q=tm.split(':').map(Number), h=q[0]+q[1]/60;
+  const p=d.split('-').map(Number), h=clockHours(tm);
   const lat=parseFloat(formVal('lat')), lon=parseFloat(formVal('lng')), nm=formSaveName();
   return savedCharts().some(e=>e.y===p[0]&&e.mo===p[1]&&e.d===p[2]&&e.t!=null
     &&Math.abs(e.t-h)<1/120&&Math.abs(e.lat-lat)<1e-4&&Math.abs(e.lon-lon)<1e-4&&e.name===nm);
@@ -9477,7 +9494,7 @@ document.getElementById('saveChart').addEventListener('click',function(){
      go in at the top while the oldest one silently fell off the bottom. */
   if(list.length>=LIB_CAP){ toast(t('libFull').replace('{n}',LIB_CAP)); return; }
   list.unshift({id:'u'+Date.now(), name:nm,
-    y:p[0], mo:p[1], d:p[2], t:q[0]+q[1]/60,
+    y:p[0], mo:p[1], d:p[2], t:clockHours(tm),
     lat:geo.lat, lon:geo.lng, tz:geo.tz, city:cityV, rr:'A', src:''});
   if(!writeCharts(list)) return;
   renderLibrary(); renderBackupLine(); askPersistence(); syncSaveBtn();
@@ -9525,7 +9542,6 @@ function csvParse(text){
   if(cell!==''||row.length){ row.push(cell); rows.push(row); }
   return rows.filter(r=>r.length>1||r[0]!=='');
 }
-const hhmm=h=>{ const t=Math.round(h*60); return pad2(Math.floor(t/60)%24)+':'+pad2(((t%60)+60)%60); };
 /* The byte-order mark is for Excel, which otherwise opens UTF-8 as the
    machine's old code page and turns every Cyrillic name into noise. Every
    other reader, ours included, skips it. */
@@ -9533,7 +9549,7 @@ function libToCsv(){
   const lines=['\ufeff'+CSV_COLS.join(',')];
   savedCharts().forEach(e=>lines.push([
     e.name, `${String(e.y).padStart(4,'0')}-${pad2(e.mo)}-${pad2(e.d)}`,
-    e.t==null?'':hhmm(e.t), e.tz==null?'':formatOffset(e.tz),
+    e.t==null?'':clockText(e.t), e.tz==null?'':formatOffset(e.tz),
     e.lat, e.lon, e.city||'', e.rr||'', e.src||'', e.note||''
   ].map(csvCell).join(',')));
   return lines.join('\r\n')+'\r\n';
