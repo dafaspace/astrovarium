@@ -83,7 +83,7 @@
      clears WCAG AA. The old one failed twice, labels at 2.63:1 in light and the
      primary button's white text at 2.70:1 in dark, against 4.5:1 required. */
   --paper:#f9f7f3; --paper2:#f4f0e9; --paper3:#ede7da; --line:#e1d8c6;
-  --ink:#201d18; --ink2:#686050; --ink3:#746c5b;
+  --ink:#201d18; --ink2:#686050; --ink3:#6f6756;   /* ink3: 4.54:1 on paper3, the planet card's ground (was 4.22) */
   --accent:#9d5d25; --accentBtn:#aa6428; --accentInk:#ffffff;
   /* Chart colours solved the same way: lines hold 3.5:1 against the wheel
      ground, sector fills keep glyphs above 12:1. MC was identical to harm
@@ -113,7 +113,7 @@
        lifted step by step. Button text is dark on the light accent, which is
        what fixes the 2.70:1 failure and reads better besides. */
     --paper:#100f17; --paper2:#171520; --paper3:#201e2c; --line:#332f43;
-    --ink:#e7e6ea; --ink2:#9693a6; --ink3:#827e93;
+    --ink:#e7e6ea; --ink2:#9693a6; --ink3:#8c889d;   /* ink3: 4.77:1 on paper3 (was 4.17) */
     --accent:#bc773a; --accentBtn:#bc773a; --accentInk:#12101e;
     --wheelbg:#0f0d19;
     --axis:#b13e78; --mc:#7f50c2; --harm:#3a6ba4; --ring3:#3d9499;
@@ -187,6 +187,10 @@ input,select{
    minimum height would stretch them out of shape. */
 input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height:44px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* A date needs more room than a time: at 320 px two equal halves showed
+   "27/01/17" for 1756, the year under the calendar icon, and a 1.35 share
+   still hid the last digit. Below 360 px they stand one above the other. */
+@media (max-width:359px){ .dtgrid{grid-template-columns:1fr} }
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 /* iOS WebKit draws date and time fields with an intrinsic width of their own and
    ignores width:100%, so in the two-column form the time field ran past the card's
@@ -327,12 +331,18 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
 @media (min-width:1100px){
   header,.wrap{max-width:1440px}
   #results{display:grid;grid-template-columns:minmax(0,1fr) minmax(380px,460px);gap:0 20px;align-items:start}
-  #results>#chartCard{grid-column:1;grid-row:1/span 30;position:sticky;top:8px;margin-top:0}
+  /* Below the sticky header (56 px), not under it: at top:8px the pencil and
+     the bookmark slid beneath the header and could not be pressed. And never
+     taller than the window: with a ring on, the step buttons, the details and
+     Print fell below the bottom edge of a card that never scrolls away, so the
+     card scrolls inside itself instead. */
+  #results>#chartCard{grid-column:1;grid-row:1/span 30;position:sticky;top:64px;margin-top:0;
+    max-height:calc(100vh - 72px);overflow-y:auto;overscroll-behavior:contain}
   #results>:not(#chartCard){grid-column:2}
   #results>:not(#chartCard):first-of-type{margin-top:0}
   #chartCard #wheel{max-width:none}
   #chartCard #wheel svg{max-height:calc(100vh - 330px);min-height:420px}
-  #chartCard.bare #wheel svg{max-height:calc(100vh - 270px)}
+  #chartCard.bare #wheel svg{max-height:calc(100vh - 400px)}   /* 323 px of card below the wheel, 72 above */
 }
 .scrub{border:1px solid var(--line);border-radius:12px;padding:10px 12px 12px;margin:10px 0 0;background:var(--paper3)}
 .momrow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
@@ -581,7 +591,8 @@ details.unit summary::after{content:'+';margin-left:auto;color:var(--ink3);font-
 details.unit[open] summary::after{content:'−'}
 details.unit .dt{padding:0 0 10px;color:var(--ink2);font-size:14px}
 .libera{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);padding:14px 0 5px;border-bottom:1px solid var(--line);margin-bottom:2px}
-.libitem{display:flex;align-items:baseline;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;flex-wrap:wrap}
+.libitem{display:flex;align-items:baseline;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;flex-wrap:wrap;min-height:44px;box-sizing:border-box}
+.libitem:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px}
 .libitem:last-child{border-bottom:none}
 .libitem:hover .libname{color:var(--accent)}
 .libname{font-weight:500}
@@ -678,8 +689,12 @@ dialog.panel[open]{animation:panelIn 200ms cubic-bezier(.2,.7,.2,1) both}
      auto height to the whole window, and the settings sheet came out mostly
      empty. Visible overflow so the language list can open past its bottom. */
   dialog.panel#setCard{width:min(520px,calc(100% - 40px));height:fit-content;max-height:86vh;overflow:visible}
-  #setCard .panelin{height:auto}
-  #setCard .panelbody{overflow:visible}
+  /* The body scrolls once the sheet reaches 86vh: with visible overflow its
+     last rows were drawn past the frame onto the dimmed page on a 1024x768
+     iPad or a 700 px tall window, and could not be reached. A list that opens
+     near the bottom now lengthens the scroll instead of spilling out. */
+  #setCard .panelin{height:auto;max-height:86vh;display:flex;flex-direction:column}
+  #setCard .panelbody{overflow-y:auto}
 }
 .setrow{display:flex;align-items:center;gap:10px;min-height:52px;border-bottom:1px solid var(--line)}
 .setrow:last-of-type{border-bottom:none}
@@ -996,7 +1011,7 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
     <div><label for="chartName" data-i="nameLabel"></label><input id="chartName" type="text" autocomplete="off"></div>
-    <div class="grid" style="margin-top:10px">
+    <div class="grid dtgrid" style="margin-top:10px">
       <div><label data-i="date" for="date"></label><input id="date" type="date"></div>
       <div><label data-i="time" for="time"></label><input id="time" type="time"></div>
     </div>
@@ -7257,12 +7272,17 @@ function showDetail(p,ch){
   html+=`<div class="sfact"><div class="lbl">${t('sfAspects')}</div></div>`;
   html+= asps.length? asps.sort((a,b)=>a.orb-b.orb).map(a=>{
       const other=a.p1===p?a.p2:a.p1;
-      return `<div style="padding:3px 0"><span style="color:${a.asp.color}"><span class="af">${ASPECT_GLYPH[a.asp.name]}</span> ${LX(ASPECT_NAME)[a.asp.name]}</span> <span class="af">${GLYPH[other]}</span> ${PN(other)} <span class="tiny">${t('orb')} ${a.orb.toFixed(1)}°</span></div>`;
+      /* The aspect's colour is drawn for lines on the wheel; as words on the
+         card it fell to 3:1. Mixed with the ink it keeps its hue and reads. */
+      return `<div style="padding:3px 0"><span style="color:color-mix(in oklab,${a.asp.color} 55%,var(--ink))"><span class="af">${ASPECT_GLYPH[a.asp.name]}</span> ${LX(ASPECT_NAME)[a.asp.name]}</span> <span class="af">${GLYPH[other]}</span> ${PN(other)} <span class="tiny">${t('orb')} ${a.orb.toFixed(1)}°</span></div>`;
     }).join('') : `<div class="tiny">${t('noaspects')}</div>`;
   html+=`<div class="cardhead" style="margin-top:10px">`
     +`<button type="button" class="copybtn noprint" data-copy="detail">${t('copy')}</button>`
     +`<span class="sp"></span></div>`;
   el.innerHTML=html;
+  /* On a desk the chart card stays put and scrolls inside itself; the card
+     opened below the wheel, out of sight, and a tap seemed to do nothing. */
+  if(matchMedia('(min-width:1100px)').matches) el.scrollIntoView({block:'nearest'});
 }
 
 /* ---------- transit engine + on-device personalization (no API) ---------- */
@@ -8744,8 +8764,11 @@ function renderChartMeta(ch,y,mo,da,hh,mi,tz,greg){
   const el=document.getElementById('chartMeta'); if(!el) return;
   const lt=document.getElementById('lilText');
   if(lt) lt.innerHTML=`<span class="af">${GLYPH.Lilith}</span> ${t(LILMODE==='true'?'m_true':'m_mean')}`;
-  const name=(document.getElementById('chartName').value||'').trim();
-  const city=(document.getElementById('city').value||'').trim();
+  /* The name and the place the chart was cast with, not what the form holds
+     now: redrawn for a house system or a mode, the head of Mozart's chart
+     took "Ada Lovelace · Lon" from a half-typed draft. */
+  const name=CAST_LABEL?CAST_LABEL.name:(document.getElementById('chartName').value||'').trim();
+  const city=CAST_LABEL?CAST_LABEL.city:(document.getElementById('city').value||'').trim();
   const hs=HOUSE_SYSTEMS[ch.houses.system];
   /* One line, and every abbreviation in it is there to keep it one line on a
      375px phone: no brackets round the offset, no minutes when the offset has
@@ -8892,6 +8915,7 @@ function run(){
      cleared on a new chart: carrying it over silently would put the next
      person's houses in a city they never mentioned. */
   CAST_ARGS={y,mo,da,hh,mi,tz,lat,lng};
+  CAST_LABEL={name:formVal('chartName'),city:formVal('city')};
   RELOC=null;
   CURRENT=computeChart(y,mo,da,hh+mi/60,tz,lat,lng); ISO=null; CONF_ISO=null; LIT_RING='inner';
   WZ={s:1,cx:C,cy:C};                     // a new chart starts with the whole wheel
@@ -8923,7 +8947,7 @@ function chartTitle(ch){
   const sys=ch.houses.system, hs=HOUSE_SYSTEMS[sys];
   return sys===HSYS ? t('natal') : `${t('natal')} · ${hs?LX(hs):sys}`;
 }
-let CAST_ARGS=null, RELOC=null;
+let CAST_ARGS=null, RELOC=null, CAST_LABEL=null;
 /* Recast the same instant at another place. Only the angles and the houses
    move: the planets are geocentric ecliptic longitudes and do not know where
    you are standing. The local time and the offset are passed through
@@ -9288,7 +9312,7 @@ function libRow(e,own){
   /* City is dropped when it repeats the name, which it does whenever a chart was
      saved without one and fell back to the city. */
   const place=(city&&city!==nm)?` · ${city}`:'';
-  return `<div class="libitem" data-id="${escH(e.id)}" data-own="${own?1:0}" title="${own?'':escH(e.src||'')}"><span class="libname">${escH(nm)}</span><span class="libmeta">${escH(date)}${escH(place)}</span>${time}${del}</div>`
+  return `<div class="libitem" role="button" tabindex="0" data-id="${escH(e.id)}" data-own="${own?1:0}" title="${own?'':escH(e.src||'')}"><span class="libname">${escH(nm)}</span><span class="libmeta">${escH(date)}${escH(place)}</span>${time}${del}</div>`
     +note;
 }
 /* Russian needs three forms where English needs two, so the count cannot be
@@ -9532,6 +9556,11 @@ function loadChartEntry(e,own){
   syncSaveBtn(); renderGeoSum();
   document.getElementById('calc').click();
 }
+/* A row is a button to the keyboard as well: focusable, opened by Enter or
+   Space. As a bare div no chart in the library could be loaded without a mouse. */
+document.getElementById('libList').addEventListener('keydown',function(ev){
+  if((ev.key==='Enter'||ev.key===' ')&&ev.target.matches('.libitem')){ ev.preventDefault(); ev.target.click(); }
+});
 document.getElementById('libList').addEventListener('click',function(ev){
   const del=ev.target.closest('button[data-del]');
   /* No confirmation dialog: one tap deletes, and the deletion can be taken back
