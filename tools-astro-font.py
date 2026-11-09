@@ -53,6 +53,58 @@ SOURCES = [
 # because its strokes are drawn for equations and are heavier.
 ORDER = ['symbols', 'symbols2', 'math']
 
+# The prescription sign is in none of the three faces, nor in the bundled Inter
+# or Literata. It is built here the way it is written: Inter's R (SIL OFL, the
+# file the app already ships), scaled to Noto's cap height, with a stroke
+# drawn through its tail and past the baseline.
+RX = 0x211E
+
+
+def build_rx(upm, cap):
+    from fontTools.ttLib import TTFont
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    from fontTools.pens.transformPen import TransformPen
+    from fontTools.pens.boundsPen import BoundsPen
+    inter = TTFont(os.path.join(HERE, 'inter-500.woff2'))
+    gs, cm = inter.getGlyphSet(), inter.getBestCmap()
+    r = cm[0x52]
+    bp = BoundsPen(gs); gs[r].draw(bp)
+    x0, y0, x1, y1 = bp.bounds
+    k = cap / (y1 - y0)                       # Inter's R cap onto Noto's cap height
+    adv = inter['hmtx'].metrics[r][0] * k
+    pen = TTGlyphPen(None)
+    gs[r].draw(TransformPen(pen, (k, 0, 0, k, 0, 0)))
+    # The stroke crosses the leg the other way, rising to the right, from a
+    # sixth of a cap below the baseline - the x through the tail that makes an
+    # R a prescription sign. Along the leg, the first try read as a doubled leg.
+    w = (x1 - x0) * k
+    stem = 0.105 * cap
+    ax, ay = x0 * k + 0.58 * w, -0.16 * cap
+    bx, by = x0 * k + 1.02 * w, 0.30 * cap
+    dx, dy = bx - ax, by - ay
+    n = (dx * dx + dy * dy) ** 0.5
+    ox, oy = -dy / n * stem / 2, dx / n * stem / 2
+    pts = [(round(ax + ox), round(ay + oy)), (round(bx + ox), round(by + oy)),
+           (round(bx - ox), round(by - oy)), (round(ax - ox), round(ay - oy))]
+    # Same winding as the R's outer contours, measured rather than assumed:
+    # the first build cut a hole where the two overlapped.
+    def area(p):
+        return sum(p[i][0] * p[(i + 1) % len(p)][1] - p[(i + 1) % len(p)][0] * p[i][1] for i in range(len(p))) / 2
+    tmp = TTGlyphPen(None); gs[r].draw(tmp); gr = tmp.glyph()
+    coords, ends, start, outer = gr.coordinates, gr.endPtsOfContours, 0, 0
+    for e in ends:
+        c = [tuple(coords[i]) for i in range(start, e + 1)]
+        a = area(c)
+        if abs(a) > abs(outer): outer = a
+        start = e + 1
+    if (area(pts) > 0) != (outer > 0):
+        pts = pts[::-1]
+    pen.moveTo(pts[0])
+    for q in pts[1:]: pen.lineTo(q)
+    pen.closePath()
+    g = pen.glyph()
+    return g, (round(max(adv, bx + stem)), round(x0 * k))
+
 
 def wanted_codepoints():
     """Every non-ASCII character the app draws in the Astro family."""
@@ -67,6 +119,13 @@ def wanted_codepoints():
                 if ord(c) > 127:
                     cps.add(ord(c))
                     where.setdefault(ord(c), name)
+    # Drawn as text rather than through those tables: the retrograde mark beside
+    # a position and on the wheel, and the arrow of a relocated chart's head.
+    # Neither is in the Inter subsets, so without them here they came from the
+    # platform's font (review 9 Nov 2026, #42).
+    for c, label in ((0x211E, 'retrograde mark'), (0x2192, 'relocation arrow')):
+        cps.add(c)
+        where.setdefault(c, label)
     return cps, where
 
 
@@ -97,7 +156,7 @@ def main():
     # Assign each code point to the first source that has it, so no glyph is
     # taken from a heavier face when a lighter one carries it.
     take, orphan = {t: set() for t in ORDER}, []
-    for c in sorted(cps):
+    for c in sorted(cps - {RX}):
         for tag in ORDER:
             if c in covers[tag]:
                 take[tag].add(c)
@@ -165,6 +224,10 @@ def main():
     # The glyph order is extended before anything is written into the tables.
     # Writing first and reordering after loses the new metrics, because the
     # order change makes fontTools rebuild hmtx from the font it was read from.
+    if RX in cps:
+        cap = getattr(base['OS/2'], 'sCapHeight', 0) or round(0.714 * upm)
+        g, m = build_rx(upm, cap)
+        incoming.append((RX, 'uni%04X' % RX, g, m))
     order = base.getGlyphOrder() + [n for _, n, _, _ in incoming]
     base.setGlyphOrder(order)
     base['glyf'].glyphOrder = order
