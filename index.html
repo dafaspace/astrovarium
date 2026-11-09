@@ -2870,6 +2870,14 @@ Object.assign(I18N.de,{plutoEdge:"Pluto wird außerhalb von 1550-2250 nicht bere
 Object.assign(I18N.it,{plutoEdge:"Plutone non è calcolato fuori dal 1550-2250: è mostrato dove si trovava al bordo"});
 Object.assign(I18N.uk,{plutoEdge:"Плутон поза 1550-2250 не розраховується: показано його положення на краю"});
 Object.assign(I18N.ka,{plutoEdge:"პლუტონი 1550-2250 შუალედს გარეთ არ გამოითვლება: ნაჩვენებია მისი მდებარეობა კიდეზე"});
+Object.assign(STR,{julian:{ru:'юлианский календарь',en:'Julian calendar'},
+  noSuchDate:{ru:'Дат 5-14 октября 1582 года не было: после 4-го сразу наступило 15-е.',en:'There was no 5-14 October 1582: the calendar went from the 4th straight to the 15th.'}});
+Object.assign(I18N.es,{julian:"calendario juliano",noSuchDate:"No hubo 5-14 de octubre de 1582: tras el día 4 vino directamente el 15."});
+Object.assign(I18N.fr,{julian:"calendrier julien",noSuchDate:"Les 5-14 octobre 1582 n’ont pas existé : après le 4 est venu directement le 15."});
+Object.assign(I18N.de,{julian:"julianischer Kalender",noSuchDate:"Den 5.-14. Oktober 1582 gab es nicht: auf den 4. folgte direkt der 15."});
+Object.assign(I18N.it,{julian:"calendario giuliano",noSuchDate:"Il 5-14 ottobre 1582 non è esistito: dopo il 4 venne direttamente il 15."});
+Object.assign(I18N.uk,{julian:"юліанський календар",noSuchDate:"Дат 5-14 жовтня 1582 року не було: після 4-го одразу настало 15-те."});
+Object.assign(I18N.ka,{julian:"იულიუსის კალენდარი",noSuchDate:"1582 წლის 5-14 ოქტომბერი არ არსებობდა: 4-ს პირდაპირ 15 მოჰყვა."});
 Object.assign(STR,{themeLight:{ru:'Светлая тема',en:'Light theme'},themeDark:{ru:'Тёмная тема',en:'Dark theme'}});
 Object.assign(I18N.es,{themeLight:"Tema claro",themeDark:"Tema oscuro"});
 Object.assign(I18N.fr,{themeLight:"Thème clair",themeDark:"Thème sombre"});
@@ -3585,7 +3593,9 @@ const RECEIVER_RANK={ASC:1.5,MC:1.5,Sun:1.3,Moon:1.3,Mercury:1.0,Venus:1.0,Mars:
    the same length Saturn's and Uranus's run. Written out rather than left to
    the lookup, because an absent entry here makes SPEED_ORB[T]+2 a NaN and a
    NaN cap silently drops every transiting Chiron aspect. */
-const SPEED_ORB={Sun:2,Moon:6,Mercury:2,Venus:2,Mars:2,Jupiter:1.5,Saturn:1.5,Uranus:1,Neptune:1,Pluto:1,Chiron:1.5,Ceres:1.5,Pallas:1.5,Juno:1.5,Vesta:1.5,NNode:1.5,SNode:1.5,Lilith:1.5,Selena:1.5};
+const SPEED_ORB={Sun:2,Moon:6,Mercury:2,Venus:2,Mars:2,Jupiter:1.5,Saturn:1.5,Uranus:1,Neptune:1,Pluto:1,Chiron:1.5,Ceres:1.5,Pallas:1.5,Juno:1.5,Vesta:1.5,NNode:1.5,SNode:1.5,Lilith:1.5,Selena:1.5,
+  /* Read only in transits; here so every synastry mover has a cap (the partner's Lot and angles). */
+  Fortune:1.5,ASC:1.5,MC:1.5};
 /* Every aspect the app knows, with the orb it ships with. The five majors are
    on by default and the six minors are off. Measured across sixty charts from
    the library, switching every minor on takes a chart from 11.6 aspects to
@@ -7508,7 +7518,11 @@ function compositeChart(ch){
   Object.keys(ch.pos).forEach(k=>{ if(p.pos[k]) pos[k]={lon:mid(ch.pos[k].lon,p.pos[k].lon)}; });
   const mc=mid(ch.mc,p.mc);
   const a=anglesFromMC(mc,(ch.geolat+p.geolat)/2,ch.ecl);
-  return {...ch, pos, mc, asc:a.asc, ramc:a.ramc, houses:a.houses, composite:true};
+  /* Half of a noon MC is no MC: with either birth time unknown the composite's
+     angles and houses are not known either, and are marked so, as a partner's
+     are, so the text and the grid leave them out. */
+  return {...ch, pos, mc, asc:a.asc, ramc:a.ramc, houses:a.houses, composite:true,
+    timeUnknown:!!(ch.timeUnknown||p.timeUnknown)};
 }
 
 function outerChart(ch,ms){ return ringChart(ch,ms,RING_MODE); }
@@ -7540,7 +7554,12 @@ const RING_MOVERS={
   directed:['Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Chiron'],
   /* Everything, Moon included: in synastry the Moon is half the reading, and
      nothing here is moving fast enough to swamp a list. */
-  synastry:['Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Chiron'],
+  synastry:['Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Chiron',
+    /* And the partner's points, angles and asteroids, which the grid always
+       showed and the list never had: node on node, Ascendant on Ascendant,
+       their Ceres on your Sun. ASC and MC are passed in by renderTransits only
+       when the partner's time is known; an asteroid only when switched on. */
+    'Ceres','Pallas','Juno','Vesta','NNode','SNode','Lilith','Selena','Fortune','ASC','MC'],
   /* A return and a composite are both whole charts standing still against the
      natal one, so everything in them is read, exactly as in synastry. */
   solar:['Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Chiron'],
@@ -7582,7 +7601,8 @@ function partnerChart(ch){
      computed so that their Ascendant and MC can receive aspects. */
   const tz=e._own?e.tz:libTz(e);
   const hh=e.t==null?12:e.t;
-  const c=computeChart(e.y,e.mo,e.d,hh,tz,e.lat,e.lon,'retro');
+  const g=civilDate(e.y,e.mo,e.d)||{y:e.y,mo:e.mo,d:e.d};
+  const c=computeChart(g.y,g.mo,g.d,hh,tz,e.lat,e.lon,'retro');
   if(e.t==null) c.timeUnknown=true;
   return c;
 }
@@ -7782,6 +7802,22 @@ const pad2=x=>String(x).padStart(2,'0');
 const clockText=h=>{ let s=Math.round(h*3600); s=((s%86400)+86400)%86400;
   const S=s%60; return pad2(Math.floor(s/3600))+':'+pad2(Math.floor(s%3600/60))+(S?':'+pad2(S):''); };
 const clockHours=tv=>{ const [h,m,s]=tv.split(':').map(Number); return h+(m||0)/60+(s||0)/3600; };
+/* A birth date as written, before 15 October 1582, is Julian: parish books
+   kept it so, and Swiss Ephemeris, astro.com and Solar Fire read it so. The
+   engine counts days in the proleptic Gregorian calendar, so such a date is
+   turned into its Gregorian twin here, once, where a date enters from a
+   person (the form, a saved or library chart, a partner). 5-14 October 1582
+   never happened and comes back null. Dates the app makes itself (the
+   scrubber, returns, progressions) are Gregorian already and do not pass
+   through here. */
+function civilDate(y,mo,d){
+  if(y>1582||(y===1582&&(mo>10||(mo===10&&d>=15)))) return {y,mo,d,jul:false};
+  if(y===1582&&mo===10&&d>4) return null;
+  const Y=mo<=2?y-1:y, M=mo<=2?mo+12:mo;
+  const jd=Math.floor(365.25*(Y+4716))+Math.floor(30.6001*(M+1))+d-1524.5;
+  const g=new Date(Math.round((jd-2440587.5)*86400000));
+  return {y:g.getUTCFullYear(),mo:g.getUTCMonth()+1,d:g.getUTCDate(),jul:true};
+}
 function momText(ms,offH){
   const d=new Date(ms+offH*3600000);
   const y=d.getUTCFullYear();
@@ -7953,7 +7989,8 @@ function renderTransits(ch){
   /* Outer-planet-to-outer-planet hits are dropped for transits because they
      are generational: everyone born that decade has them. In a progressed or
      directed chart they are personal again, since the arc is this person's. */
-  let hits=aspectOrbs(inner,outer.pos)
+  const movers=syn&&!outer.timeUnknown?{...outer.pos,ASC:{lon:outer.asc},MC:{lon:outer.mc}}:outer.pos;
+  let hits=aspectOrbs(inner,movers)
     .filter(h=>RING_MODE!=='transit'
       ||!(['Uranus','Neptune','Pluto'].includes(h.tp)&&['Uranus','Neptune','Pluto'].includes(h.np)));
   /* Synastry is read both ways. The outer person's planets reach the inner
@@ -7963,7 +8000,11 @@ function renderTransits(ch){
      different lists. They are added here, marked so the list can say whose
      angle it is. */
   if(syn){
-    aspectOrbs(outer,inner.pos).filter(h=>h.np==='ASC'||h.np==='MC'||isAspectPoint(h.np))
+    /* Only the inner person's planets here: their points and angles reaching
+       the outer chart's are already in the forward pass, as the outer chart's
+       points reaching them, and would be counted twice. */
+    aspectOrbs(outer,inner.pos).filter(h=>(h.np==='ASC'||h.np==='MC'||isAspectPoint(h.np))
+      &&!(h.tp==='ASC'||h.tp==='MC'||isAspectPoint(h.tp)||ASTEROID_BODIES.includes(h.tp)))
       .forEach(h=>hits.push({...h,rev:true}));
   }
   /* A chart whose birth time is unknown is cast for noon, and its angles are
@@ -8350,7 +8391,10 @@ const GRID_BODIES=WHEEL_BODIES.concat(ASPECT_POINTS,['ASC','MC']);
 function gridLon(ch,n){ return n==='ASC'?ch.asc:n==='MC'?ch.mc:(ch.pos[n]?ch.pos[n].lon:null); }
 function renderGrid(ch,tr){
   const box=document.getElementById('aspGrid'); if(!box) return;
-  const cols=GRID_BODIES.filter(n=>gridLon(ch,n)!=null);
+  /* The inner chart's angles only when its time is known: after a swap the
+     inner chart is the partner's, and the list already drops aspects to a
+     noon Ascendant (renderTransits); the grid showed them anyway. */
+  const cols=GRID_BODIES.filter(n=>gridLon(ch,n)!=null&&!(ch.timeUnknown&&(n==='ASC'||n==='MC')));
   const rows=tr ? WHEEL_BODIES.filter(n=>tr.pos[n])
       .concat(RING_MODE==='synastry'&&!tr.timeUnknown?['ASC','MC']:[]) : cols;
   const cell=(content,cls,data)=>`<div class="gc ${cls||''}"${data||''}>${content}</div>`;
@@ -8631,8 +8675,8 @@ function weekdayName(y,mo,d){
   }catch(e){ return ''; }
 }
 let META_ARGS=null;
-function renderChartMeta(ch,y,mo,da,hh,mi,tz){
-  META_ARGS=[ch,y,mo,da,hh,mi,tz];
+function renderChartMeta(ch,y,mo,da,hh,mi,tz,greg){
+  META_ARGS=[ch,y,mo,da,hh,mi,tz,greg];
   const el=document.getElementById('chartMeta'); if(!el) return;
   const lt=document.getElementById('lilText');
   if(lt) lt.innerHTML=`<span class="af">${GLYPH.Lilith}</span> ${t(LILMODE==='true'?'m_true':'m_mean')}`;
@@ -8646,7 +8690,8 @@ function renderChartMeta(ch,y,mo,da,hh,mi,tz){
   const off=utcLabel(tz);
   const line1=[
     `<b>${String(da).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${y}</b>`
-      +` ${weekdayName(y,mo,da)} <b>${clockText(hh+mi/60)}</b> ${off}`,
+      +(greg?` (${t('julian')})`:'')
+      +` ${greg?weekdayName(greg.y,greg.mo,greg.d):weekdayName(y,mo,da)} <b>${clockText(hh+mi/60)}</b> ${off}`,
     fmtGeo(ch.geolat,ch.geolon)+(RELOC?' '+t('relocMark'):'')
   ].filter(Boolean).join(' · ');
   /* "Geocentric" is dropped: it is the only thing this app computes, and a
@@ -8770,8 +8815,11 @@ function run(){
        to show where they are, or the message names fields nobody can see. */
     if(dv&&tv) setGeoOpen(true);
     alert(t('needdata')); return false; }
-  const [y,mo,da]=dv.split('-').map(Number);
+  const [y0,mo0,da0]=dv.split('-').map(Number);
   const [hh,mi0,ss]=tv.split(':').map(Number), mi=mi0+(ss||0)/60;
+  const cd=civilDate(y0,mo0,da0);
+  if(!cd){ alert(t('noSuchDate')); return false; }
+  const {y,mo,d:da}=cd;
   /* Kept so the same moment can be recast at another place. Relocation is
      cleared on a new chart: carrying it over silently would put the next
      person's houses in a city they never mentioned. */
@@ -8784,7 +8832,7 @@ function run(){
   document.getElementById('results').style.display='';
   document.getElementById('emptycard').style.display='none';
   document.getElementById('charttitle').textContent=chartTitle(CURRENT);
-  renderPositions(CURRENT); renderBalance(CURRENT); renderChartMeta(CURRENT,y,mo,da,hh,mi,tz);
+  renderPositions(CURRENT); renderBalance(CURRENT); renderChartMeta(CURRENT,y0,mo0,da0,hh,mi,tz,cd.jul?cd:null);
   fillExport();
   saveForm(true);
   renderRelocBrief();
