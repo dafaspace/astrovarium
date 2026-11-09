@@ -427,6 +427,8 @@ button.ico:disabled{opacity:.4;cursor:default}
   .printonly{display:block !important}
   .planet-row{break-inside:avoid}
   .planet-row.hit{min-height:0;margin:0}            /* a 44 px tap row is 17 rows across a page on paper */
+  details.fold>summary::after, details.unit summary::after{content:none !important}   /* no + and - on paper */
+  details.fold:not([open]){display:none !important}  /* a shut card is a bare heading on paper */
   #chartCard #wheel{max-width:none}                 /* the screen's 420 px cap held the paper wheel at 111 mm */
   .gridwrap{overflow:visible}
   h2{font-size:14pt}
@@ -454,7 +456,7 @@ button.ico:disabled{opacity:.4;cursor:default}
 .ddnative{position:absolute;opacity:0;pointer-events:none;width:100%;height:100%;left:0;top:0}
 .ddbtn{width:100%;min-height:44px;padding:9px 30px 9px 12px;text-align:left;
   border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);
-  font:inherit;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;
+  font:inherit;line-height:1;   /* font:inherit brought back 1.5 and lifted the label: 15.6/15.5 with 1 */font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;justify-content:flex-start;
   background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
     linear-gradient(135deg,currentColor 50%,transparent 50%);
@@ -465,6 +467,7 @@ button.ico:disabled{opacity:.4;cursor:default}
   max-height:min(52vh,340px);overflow-y:auto;-webkit-overflow-scrolling:touch;
   background:var(--paper);border:1px solid var(--line);border-radius:12px;
   box-shadow:0 12px 32px rgba(0,0,0,.28);padding:4px}
+.ddopt:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .ddopt{min-height:44px;display:flex;align-items:center;padding:8px 12px;border-radius:8px;
   cursor:pointer;white-space:nowrap}
 .ddopt:hover{background:var(--paper3)}
@@ -1265,9 +1268,9 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 </div>
 
 
-<script src="./ephemeris.js?v=3.22.7"></script>
-<script src="./planets.js?v=3.22.7"></script>
-<script src="./moon.js?v=3.22.7"></script>
+<script src="./ephemeris.js?v=3.22.8"></script>
+<script src="./planets.js?v=3.22.8"></script>
+<script src="./moon.js?v=3.22.8"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -1276,7 +1279,7 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 
 /* Bump together with CACHE in sw.js: the two are the same release, and the
    number on screen is how you tell from a phone which one you are looking at. */
-const APP_VERSION='3.22.7';
+const APP_VERSION='3.22.8';
 document.getElementById('ver').textContent=APP_VERSION;
 
 /* ---------- feature flags ----------
@@ -6262,7 +6265,9 @@ function drawWheel(ch,tr,t3=TR3_CHART){
   axes.forEach(([lon,lbl,col])=>{
     const [lx,ly]=polar(lon,rHouOut+1);
     const dx=lx-C;
-    let anchor=Math.abs(dx)<30?'middle':(dx>0?'start':'end'), x=lx, y=ly+(ly>C?9:-3);
+    let anchor=Math.abs(dx)<30?'start':(dx>0?'start':'end'), x=Math.abs(dx)<30?lx+4:lx, y=ly+(ly>C?9:-3);
+    /* MC and IC sit beside their axis, not centred on it: centred, the axis
+       line ran through the C. */
     /* Near the left and right edges an outward label has nowhere to go: the
        wheel fills the card on a phone, and "Asc 24" anchored outward from x=2
        was drawn entirely outside the picture - on the iOS build, 10 Oct 2026,
@@ -6408,7 +6413,9 @@ function drawWheel(ch,tr,t3=TR3_CHART){
        A paper-coloured stroke UNDER the fill keeps it legible where an aspect
        chord passes behind, which is the only job the disc was still doing.
        paint-order puts the stroke first; without it the halo covers the glyph. */
-    const retro=ch.pos[n].retro?'\u211e':'';
+    /* The mark as a smaller tspan: full size it widened the centred label to
+       the right, and Mozart's "13R" ran over the South Node beside it. */
+    const retro=ch.pos[n].retro?'<tspan font-size="0.72em" font-family="Astro,Inter,sans-serif">\u211e</tspan>':'';
     const deg=Math.floor(rev(ch.pos[n].lon)%30)+1;
     const fs=isPoint?natPtFs:natFs;
     s+=`<text x="${px.toFixed(1)}" y="${(py+fs*0.34).toFixed(1)}" text-anchor="middle"`
@@ -6421,7 +6428,9 @@ function drawWheel(ch,tr,t3=TR3_CHART){
        thing. */
     /* Inward, not outward. Outward is where the leader line runs and where the
        scale is, and in a stellium the numbers landed on both. */
-    const [dx2,dy2]=polar(disp,rPl-fs*(rich?0.95:0.82));
+    /* A label with the mark is wider, and centred it reached back into its own
+       glyph at the sides of the wheel: it moves inward by the mark's width. */
+    const [dx2,dy2]=polar(disp,rPl-fs*(rich?0.95:0.82)-(!rich&&ch.pos[n].retro?natDegFs*0.32:0));
     const halo=` paint-order="stroke" stroke="var(--paper)" stroke-width="2.5" stroke-linejoin="round"`;
     /* In the full stack the degree is the position counted from zero, as the
        sign and minutes after it are: 5 deg 36 min of Scorpio reads 5 Sc 36.
@@ -6470,9 +6479,10 @@ function drawWheel(ch,tr,t3=TR3_CHART){
       /* In the ring's colour, not the neutral grey the natal degrees use. The
          outer band already carries grey cusp degrees, and a grey number beside
          a transit glyph read as belonging to them. */
-      o+=`<text x="${tdx.toFixed(1)}" y="${(tdy+2.8).toFixed(1)}" text-anchor="middle" font-size="7.5"`
+      /* 8.5, up from 7.5, and opaque: at a phone's scale 7.5 drew 4.6-5.9 px. */
+      o+=`<text x="${tdx.toFixed(1)}" y="${(tdy+3.1).toFixed(1)}" text-anchor="middle" font-size="8.5"`
         +` paint-order="stroke" stroke="var(--paper)" stroke-width="2.2" stroke-linejoin="round"`
-        +` fill="${colour}" opacity="0.8">${dg}${R.pos[n].retro?'\u211e':''}</text>`;
+        +` fill="${colour}">${dg}${R.pos[n].retro?'<tspan font-size="0.72em" font-family="Astro,Inter,sans-serif">\u211e</tspan>':''}</text>`;
       o+=`</g>`;
     });
     return o;
@@ -8069,6 +8079,7 @@ function setPlaying(on){
 }
 
 function renderTransits(ch){
+  { const ct=document.getElementById('charttitle'); if(ct&&CURRENT) ct.textContent=chartTitle(CURRENT); }
   const o=learn();
   const tr=outerChart(ch,TR_MS);
   TR_CHART=tr;
@@ -8530,7 +8541,9 @@ function renderGrid(ch,tr){
       if(!hit){ html+=cell('','empty'); return; }
       n++;
       html+=cell(`<span class="af" style="color:${hit.asp.color}">${ASPECT_GLYPH[hit.asp.name]}</span>`,
-        'on', ` data-r="${r}" data-c="${c}" data-a="${hit.asp.name}" data-o="${hit.orb.toFixed(2)}" role="button" tabindex="0"`);
+        'on', ` data-r="${r}" data-c="${c}" data-a="${hit.asp.name}" data-o="${hit.orb.toFixed(2)}" role="button" tabindex="0"`
+          /* A screen reader heard only the glyph: the cell is named as the pair it opens. */
+          +` aria-label="${escH(`${PN(r)} ${LX(ASPECT_NAME)[hit.asp.name]||hit.asp.name} ${PN(c)}, ${t('orb')} ${hit.orb.toFixed(1)}°`)}"`);
     });
   });
   box.style.setProperty('--gcols',cols.length+1);
@@ -8815,7 +8828,8 @@ function renderChartMeta(ch,y,mo,da,hh,mi,tz,greg){
     `<b>${String(da).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${y}</b>`
       +(greg?` (${t('julian')})`:'')
       +` ${greg?weekdayName(greg.y,greg.mo,greg.d):weekdayName(y,mo,da)} <b>${clockText(hh+mi/60)}</b> ${off}`,
-    fmtGeo(ch.geolat,ch.geolon)+(RELOC?' '+t('relocMark'):'')
+    /* One unit on the line: a break between 47n48 and 13e03 split the place. */
+    `<span style="white-space:nowrap">${fmtGeo(ch.geolat,ch.geolon)}</span>`+(RELOC?' '+t('relocMark'):'')
   ].filter(Boolean).join(' · ');
   /* "Geocentric" is dropped: it is the only thing this app computes, and a
      constant printed as though it were a setting is noise. "Tropical" stays -
@@ -8986,7 +9000,11 @@ function run(){
    purpose, and the title is the one that is true. */
 function chartTitle(ch){
   const sys=ch.houses.system, hs=HOUSE_SYSTEMS[sys];
-  return sys===HSYS ? t('natal') : `${t('natal')} · ${hs?LX(hs):sys}`;
+  /* The card names what the wheel shows: "Natal chart" stood over transits,
+     returns, synastry and tri-wheels alike. */
+  const what=RING_MODE&&RING_MODE!=='none'
+    ? t('ring_'+RING_MODE)+(TR3_CHART&&RING2_MODE&&RING2_MODE!=='none'?' + '+t('ring_'+RING2_MODE):'') : t('natal');
+  return sys===HSYS ? what : `${what} · ${hs?LX(hs):sys}`;
 }
 let CAST_ARGS=null, RELOC=null, CAST_LABEL=null;
 /* Recast the same instant at another place. Only the angles and the houses
@@ -9009,6 +9027,7 @@ function applyRelocation(){
 function renderRelocBrief(){
   const el=document.getElementById('relocBrief'); if(!el) return;
   el.textContent=RELOC?RELOC.city:t('relocOff');
+  const b=document.getElementById('relocClear'); if(b) b.disabled=!RELOC;   // pressing it with nothing to undo did nothing, silently
 }
 /* Birth moment in UTC ms, so the scrubber can jump back to it. Held apart from
    the chart because a chart is positions and a moment is a clock reading. */
