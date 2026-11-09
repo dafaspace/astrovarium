@@ -107,8 +107,13 @@
   --fire:#e3bdaa; --earth:#8cd685; --air:#d4c57d; --water:#9cccde;
   --radius:16px;
   --glass:rgba(246,242,234,.72);
+  color-scheme:light;
 }
+/* color-scheme tells the native controls which theme they are in: without it
+   the date and time icons were black on the near-black field and the
+   settings checkboxes white squares. */
 :root[data-theme="dark"]{
+    color-scheme:dark;
     /* Night sky rather than dark paper: deep indigo, no pure black, surfaces
        lifted step by step. Button text is dark on the light accent, which is
        what fixes the 2.70:1 failure and reads better besides. */
@@ -236,7 +241,8 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
 .planet-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 /* A row is a target, so it gets the 44px floor and says so by responding. */
 .planet-row.hit{min-height:44px;cursor:pointer;border-radius:8px;padding-left:6px;padding-right:6px;margin:0 -6px}
-.planet-row.hit:hover,.planet-row.hit:focus-visible{background:var(--paper3);outline:none}
+.planet-row.hit:hover{background:var(--paper3)}
+.planet-row.hit:focus-visible{background:var(--paper3);outline:2px solid var(--accent);outline-offset:-2px}
 .planet-row.hit:active{background:var(--paper2)}
 .planet-row:last-child{border-bottom:none}
 .planet-row .g{font-size:19px;width:26px;text-align:center}
@@ -245,7 +251,7 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
 .planet-row .hs{margin-left:auto;color:var(--ink3);font-size:12px}
 /* The retrograde mark is a letter, not a colour, so it survives a greyscale
    print and a colour-blind reader. */
-.rx{color:var(--hard);font-weight:600;margin-left:3px}
+.rx{color:color-mix(in oklab,var(--hard) 60%,var(--ink));font-weight:600;margin-left:3px}   /* --hard is a line colour; as text it fell to 3:1 */
 .planet-row .spd{color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums;margin-left:10px}
 /* On a phone five columns do not fit in 300 px: the sign glyph dropped under
    the degrees and "house" under its number. Two lines instead - the name and
@@ -303,6 +309,9 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
    the tap-detail box without scrolling, and on a desktop the 420px ceiling
    stops the wheel from filling a tall window on its own. */
 #chartCard #wheel{max-width:min(100%,420px);margin:0 auto}
+/* A tablet below the desk layout has the room: 420 px left a third of a
+   768 px column empty and the wheel's small labels too small. */
+@media (min-width:700px) and (max-width:1099px){ #chartCard #wheel{max-width:min(100%,640px)} }
 /* Zooming the wheel. At 1x a finger on the wheel scrolls the page, as it always
    did, and a two-finger pinch is handed to the wheel instead of the page; zoomed
    in, a finger pans the wheel. */
@@ -360,14 +369,14 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
 #scrub::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--accentBtn);
   border:2px solid var(--paper);box-shadow:0 1px 3px rgba(0,0,0,.28);cursor:grab}
 #scrub:active::-webkit-slider-thumb{cursor:grabbing}
-.scrubctl{display:flex;align-items:center;gap:8px}
+.scrubctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .scrubctl.jump{margin-top:8px}
 .scrubctl.jump button{flex:1}
 .scrubctl select{width:auto;flex:1;min-width:0}
 .scrubctl button{min-height:44px}
 /* Square icon buttons: 44px is the floor a thumb needs, and it is cheaper to
    set here than to retrofit across thirteen classes later. */
-button.ico{width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--ink2)}
+button.ico{width:44px;height:44px;flex:none;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--ink2)}
 /* The global svg rule stretches every icon to its container's width, which
    on a 44px target draws an 44px glyph. These are 18px marks in a 44px
    button: the target is for the thumb, the drawing is for the eye. */
@@ -378,7 +387,8 @@ button.ico:disabled{opacity:.4;cursor:default}
 .confrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 6px;margin:0 -6px;
   border-bottom:1px solid var(--line);border-radius:8px;cursor:pointer;flex-wrap:wrap}
 .confrow:last-child{border-bottom:none}
-.confrow:hover,.confrow:focus-visible{background:var(--paper3);outline:none}
+.confrow:hover{background:var(--paper3)}
+.confrow:focus-visible{background:var(--paper3);outline:2px solid var(--accent);outline-offset:-2px}
 .confrow.on{background:var(--paper2);box-shadow:inset 2px 0 0 var(--accent)}
 .confrow .nm{font-size:14px;flex:none}
 .confrow .who{font-size:17px;letter-spacing:2px;color:var(--ink2);flex:none}
@@ -414,6 +424,8 @@ button.ico:disabled{opacity:.4;cursor:default}
   #printFactsCard{display:block !important;break-before:page;page-break-before:always}
   .printonly{display:block !important}
   .planet-row{break-inside:avoid}
+  .planet-row.hit{min-height:0;margin:0}            /* a 44 px tap row is 17 rows across a page on paper */
+  #chartCard #wheel{max-width:none}                 /* the screen's 420 px cap held the paper wheel at 111 mm */
   .gridwrap{overflow:visible}
   h2{font-size:14pt}
   .tiny{font-size:8pt}
@@ -426,7 +438,8 @@ button.ico:disabled{opacity:.4;cursor:default}
 /* The step control shares its row with three 44px buttons and a label, and
    flex alone shrank it until сутки came out as сут... The floor is the
    longest unit name plus the chevron. */
-.scrubctl .dd{flex:1;min-width:112px;width:auto}
+.scrubctl .stepgrp{display:flex;align-items:center;gap:8px;flex:1 1 115px;min-width:0}
+.scrubctl .dd{flex:1;min-width:72px;width:auto}   /* never squeezed: on a narrow phone label and list wrap to their own line together */
 /* The header pair: this one is a 34px chip beside the theme switch, not a
    44px form control. */
 .dd.langsel{width:auto;flex:none}
@@ -446,7 +459,7 @@ button.ico:disabled{opacity:.4;cursor:default}
   background-position:calc(100% - 17px) 52%,calc(100% - 12px) 52%;
   background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 .dd.open .ddbtn{border-color:var(--accent)}
-.ddlist{position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:100%;
+.ddlist{position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:100%;max-width:calc(100vw - 32px);
   max-height:min(52vh,340px);overflow-y:auto;-webkit-overflow-scrolling:touch;
   background:var(--paper);border:1px solid var(--line);border-radius:12px;
   box-shadow:0 12px 32px rgba(0,0,0,.28);padding:4px}
@@ -578,7 +591,7 @@ html.native .tagline{display:none}
 a{color:var(--accent)}
 .citywrap{position:relative}
 .citylist{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;max-height:220px;overflow:auto;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,.14);display:none}
-.citylist div{padding:8px 10px;cursor:pointer;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.citylist div{padding:8px 10px;min-height:44px;box-sizing:border-box;cursor:pointer;font-size:14px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .citylist div:hover{background:var(--paper3)}
 .citylist .cc{color:var(--ink3);font-size:12px}
 details.unit{border-bottom:1px solid var(--line);padding:4px 0}
@@ -729,7 +742,7 @@ dialog.panel[open]{animation:panelIn 200ms cubic-bezier(.2,.7,.2,1) both}
   background:var(--paper3);border-radius:10px;padding:10px;margin:0 0 10px}
 #reportSec .setrow button{flex:1;min-height:44px;display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .setfold{border-bottom:1px solid var(--line)}
-.setfold>summary{min-height:52px}
+.setfold>summary{min-height:52px;margin:0;padding:0 0;border-radius:0}   /* the card's -16 px bleed made it overlap its neighbours here */
 .setfold>summary .setlab{flex:none}
 .setfold[open]>summary{margin-bottom:4px}
 /* Arriving from the planet card at the rulers row: the row says where you are. */
@@ -1119,7 +1132,7 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4.8 3.2 12.4 8l-7.6 4.8z"/></svg></button>
           <button class="ico" id="stepFwd" data-i-title="stepfwd">
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3.5 10.5 8l-5 4.5"/><path d="M12.4 3.5v9"/></svg></button>
-          <label class="steplab" data-i="stepLabel" for="scrubUnit"></label><select id="scrubUnit"></select>
+          <span class="stepgrp"><label class="steplab" data-i="stepLabel" for="scrubUnit"></label><select id="scrubUnit"></select></span>
         </div>
         <!-- Second row rather than a wrap: left to itself the flex row broke
              into three on a phone and the card stopped fitting the screen. -->
@@ -1250,9 +1263,9 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 </div>
 
 
-<script src="./ephemeris.js?v=3.22.5"></script>
-<script src="./planets.js?v=3.22.5"></script>
-<script src="./moon.js?v=3.22.5"></script>
+<script src="./ephemeris.js?v=3.22.6"></script>
+<script src="./planets.js?v=3.22.6"></script>
+<script src="./moon.js?v=3.22.6"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -2890,6 +2903,13 @@ Object.assign(I18N.de,{plutoEdge:"Pluto wird außerhalb von 1550-2250 nicht bere
 Object.assign(I18N.it,{plutoEdge:"Plutone non è calcolato fuori dal 1550-2250: è mostrato dove si trovava al bordo"});
 Object.assign(I18N.uk,{plutoEdge:"Плутон поза 1550-2250 не розраховується: показано його положення на краю"});
 Object.assign(I18N.ka,{plutoEdge:"პლუტონი 1550-2250 შუალედს გარეთ არ გამოითვლება: ნაჩვენებია მისი მდებარეობა კიდეზე"});
+Object.assign(STR,{polarFallback:{ru:'{sys} не определена за полярным кругом',en:'{sys} is undefined past the polar circle'}});
+Object.assign(I18N.es,{polarFallback:"{sys} no está definido más allá del círculo polar"});
+Object.assign(I18N.fr,{polarFallback:"{sys} n’est pas défini au-delà du cercle polaire"});
+Object.assign(I18N.de,{polarFallback:"{sys} ist jenseits des Polarkreises nicht definiert"});
+Object.assign(I18N.it,{polarFallback:"{sys} non è definito oltre il circolo polare"});
+Object.assign(I18N.uk,{polarFallback:"{sys} не визначена за полярним колом"});
+Object.assign(I18N.ka,{polarFallback:"{sys} პოლარული წრის მიღმა არ არის განსაზღვრული"});
 Object.assign(STR,{julian:{ru:'юлианский календарь',en:'Julian calendar'},
   noSuchDate:{ru:'Дат 5-14 октября 1582 года не было: после 4-го сразу наступило 15-е.',en:'There was no 5-14 October 1582: the calendar went from the 4th straight to the 15th.'}});
 Object.assign(I18N.es,{julian:"calendario juliano",noSuchDate:"No hubo 5-14 de octubre de 1582: tras el día 4 vino directamente el 15."});
@@ -6221,7 +6241,11 @@ function drawWheel(ch,tr,t3=TR3_CHART){
        ordinal degree, the way every ephemeris prints it: 3 deg 30 min is the
        fourth degree, so it reads 4. Skipped at the four angles, which carry
        their degree in their own label. */
-    if(!angleCusp){
+    /* Also skipped wherever a cusp falls on an angle in another system: in
+       Equal and Whole Sign cusp 1 is the Ascendant (or within its degree), and
+       its grey number sat under "Asc 24". */
+    const onAngle=[asc,rev(asc+180),ch.mc,rev(ch.mc+180)].some(x=>Math.abs(((a-x+540)%360)-180)<1.5);
+    if(!angleCusp&&!onAngle){
       const [dx2,dy2]=polar(a,rHouIn+8);
       s+=`<text x="${dx2.toFixed(1)}" y="${(dy2+3).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="var(--ink3)" opacity="0.95">${Math.floor(rev(a)%30)+1}</text>`;
     }
@@ -8290,7 +8314,7 @@ function renderOrbs(){
   box.innerHTML=ASPECT_DEFS.map(a=>{
     const cfg=ORBS[a.name];
     return `<div class="orbrow${a.minor?' minor':''}">
-      <label class="sw"><input type="checkbox" data-orb-on="${a.name}"${cfg.on?' checked':''}><span></span></label>
+      <label class="sw"><input type="checkbox" data-orb-on="${a.name}" aria-label="${escH(LX(ASPECT_NAME)[a.name]||a.name)}"${cfg.on?' checked':''}><span></span></label>
       <span class="g af" style="color:${ASPECT_COLOR[a.kind]}">${ASPECT_GLYPH[a.name]}</span>
       <span class="nm">${LX(ASPECT_NAME)[a.name]||a.name}</span>
       <span class="ang">${a.angle}°</span>
@@ -8726,6 +8750,7 @@ function selectCity(c){
   renderGeoSum(); syncSaveBtn();
 }
 function applyStatic(){
+  document.documentElement.lang=LANG;   // set on every pass, the first included: it was empty until a switch
   document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t(el.dataset.i));
   /* Icon-only controls carry their label as a tooltip and an aria-label, since
      there is no text node to translate. */
@@ -8752,9 +8777,13 @@ function todayStr(){
 /* Weekday from the platform rather than a table of our own: Intl already has
    it in every language the app speaks, including Georgian. Built in UTC and
    read back in UTC so no local timezone can shift the day. */
+/* Except where the platform has no data: Chromium, and so the Android build,
+   ships no Georgian, and Intl answered "Tue". CLDR's short names, Sunday first. */
+const WEEKDAY_OWN={ka:['კვი','ორშ','სამ','ოთხ','ხუთ','პარ','შაბ']};
 function weekdayName(y,mo,d){
   try{
     const dt=new Date(0); dt.setUTCFullYear(y,mo-1,d); dt.setUTCHours(12,0,0,0);
+    if(WEEKDAY_OWN[LANG]&&!Intl.DateTimeFormat.supportedLocalesOf([LANG]).length) return WEEKDAY_OWN[LANG][dt.getUTCDay()];
     return new Intl.DateTimeFormat(LANG,{weekday:'short',timeZone:'UTC'}).format(dt);
   }catch(e){ return ''; }
 }
@@ -8787,7 +8816,12 @@ function renderChartMeta(ch,y,mo,da,hh,mi,tz,greg){
   /* The Black Moon variant as its glyph plus one word. Spelling it out took a
      second line, and which of the two is in use has to be on the chart: they
      differ by up to a whole sign, so a screenshot without it is ambiguous. */
-  const line2=[t('tropical'),(hs?LX(hs):ch.houses.system),
+  /* When the chosen system gave way (Placidus and Koch are undefined past
+     the polar circle) the pill above still names the chosen one, so the line
+     says what is drawn and why. */
+  const fb=ch.houses.system!==HSYS&&HOUSE_SYSTEMS[HSYS]
+    ? ` (${t('polarFallback').replace('{sys}',LX(HOUSE_SYSTEMS[HSYS]))})` : '';
+  const line2=[t('tropical'),(hs?LX(hs):ch.houses.system)+fb,
     `<span class="af">${GLYPH.Lilith}</span> ${t(LILMODE==='true'?'m_true':'m_mean')}`
   ].join(' · ');
   /* Name and place share a line. On their own they cost two lines of the
@@ -9312,7 +9346,7 @@ function libRow(e,own){
   /* City is dropped when it repeats the name, which it does whenever a chart was
      saved without one and fell back to the city. */
   const place=(city&&city!==nm)?` · ${city}`:'';
-  return `<div class="libitem" role="button" tabindex="0" data-id="${escH(e.id)}" data-own="${own?1:0}" title="${own?'':escH(e.src||'')}"><span class="libname">${escH(nm)}</span><span class="libmeta">${escH(date)}${escH(place)}</span>${time}${del}</div>`
+  return `<div class="libitem" role="button" tabindex="0" data-id="${escH(e.id)}" data-own="${own?1:0}" title="${own||LANG!=='ru'?'':escH(e.src||'')}"><span class="libname">${escH(nm)}</span><span class="libmeta">${escH(date)}${escH(place)}</span>${time}${del}</div>`
     +note;
 }
 /* Russian needs three forms where English needs two, so the count cannot be
@@ -9432,6 +9466,9 @@ LIB_SORTS.place.uk="за місцем";
 LIB_SORTS.date.ka="დაბადების თარიღით";
 LIB_SORTS.name.ka="სახელით";
 LIB_SORTS.place.ka="ადგილით";
+/* The two house-system lists were filled before the names above were
+   attached, so they read in English until the language was switched. */
+fillHsys();
 let LIB_SORT=localStorage.getItem('astrarium_libsort');
 if(!LIB_SORTS[LIB_SORT]) LIB_SORT='date';
 function fillLibSort(){
