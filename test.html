@@ -5569,6 +5569,30 @@ function run(){
     if(r.compTU!==true) bad.push('композит с партнёром без времени не помечен');
     return !bad.length||bad.join('; ');
   });
+  t('#10 средняя Лилит вне 1550-2250 сохраняет главный член, а не замерзает',()=>{
+    const r=ev(`[[1500,6,1],[1549,1,1],[2300,6,1]].map(([y,m,d])=>{
+      const dd=Date.UTC(y,m-1,d)/86400000+2440587.5-2451543.5, T=(dd-1.5)/36525;
+      const base=263.3532465+T*(4069.0137287+T*(-0.0103200+T*(-1/80053+T/18999000)));
+      const F=1.627905233371468+8433.466158130539*T, l=2.3555558982657994+8328.691426955555*T;
+      const want=rev(base-416.4*Math.sin(2*(F-l))/3600);
+      let dlt=(lilithLon(dd)-want)*3600; if(dlt>648000) dlt-=1296000; if(dlt<-648000) dlt+=1296000; return Math.abs(dlt);})`);
+    const bad=r.map((x,i)=>x>15?['1500','1549','2300'][i]+': '+x.toFixed(1)+'″':null).filter(Boolean);
+    return !bad.length||bad.join('; ');
+  });
+  t('#2 крестик после холодного старта с черновиком возвращает построенную карту',()=>{
+    const r=ev(`(()=>{const keep=[localStorage.getItem(CAST_KEY),localStorage.getItem(FORM_KEY)];
+      try{
+        const cast=formNow(); cast.date='1990-05-10'; cast.time='04:45'; cast.lat='55.75'; cast.lng='37.62'; cast.tz='+04:00';
+        const draft={...cast, date:'2001-01-01'};
+        localStorage.setItem(CAST_KEY,JSON.stringify(cast)); localStorage.setItem(FORM_KEY,JSON.stringify(draft));
+        restoreSession(); const snapDate=FORM_SNAP&&FORM_SNAP.o.date, formDate=document.getElementById('date').value;
+        document.getElementById('formClose').click();
+        return {snapDate, formDate, after:document.getElementById('date').value};
+      }finally{ keep[0]==null?localStorage.removeItem(CAST_KEY):localStorage.setItem(CAST_KEY,keep[0]);
+        keep[1]==null?localStorage.removeItem(FORM_KEY):localStorage.setItem(FORM_KEY,keep[1]);
+        restoreForm(CAST_KEY)||restoreForm(FORM_KEY); run(); }})()`);
+    return (r.formDate==='2001-01-01'&&r.snapDate==='1990-05-10'&&r.after==='1990-05-10')||JSON.stringify(r);
+  });
   t('#1 ручной пояс переживает перезапуск, а карта из библиотеки не берёт город, выбранный раньше',()=>{
     const r=ev(`(()=>{const keep=[SELECTED_CITY,TZ_AUTO,localStorage.getItem(FORM_KEY)];
       try{

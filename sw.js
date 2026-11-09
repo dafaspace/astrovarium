@@ -12,7 +12,7 @@
    Bump CACHE on every deploy that changes a precached file, and keep it equal
    to APP_VERSION in index.html: the number shown next to the title is how a
    stale install is spotted, so it has to name the same release as this cache. */
-const CACHE = 'astrotrip-v3.22.3';
+const CACHE = 'astrotrip-v3.22.4';
 /* The engine files carry the version in their URL, as index.html asks for
    them. Unversioned, the first session after a release ran the new page on
    the previous engine: the page came from the network, the engine from the
@@ -75,7 +75,12 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(c => Promise.all([
-        c.addAll(CRITICAL),
+        /* cache:'reload' goes past the browser's HTTP cache. GitHub Pages sends
+           index.html with max-age=600, so a worker installed minutes after a
+           release could store the previous index.html, which then asked for
+           engine files of the previous version that activate had just deleted:
+           no chart offline. */
+        c.addAll(CRITICAL.map(u => new Request(u, { cache: 'reload' }))),
         ...OPTIONAL.map(u => c.add(u).catch(() => {})),
         hadAsteroids().then(had => had && c.add(`./asteroids.js?v=${V}`).catch(() => {}))
       ]))
@@ -104,7 +109,7 @@ self.addEventListener('fetch', e => {
     const scope = new URL(self.registration.scope).pathname;
     const isShell = url.pathname === scope || url.pathname === scope + 'index.html';
     e.respondWith(
-      fetch(req)
+      (isShell ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req))
         .then(res => {
           if (!isShell) return res;
           // Only a real 200 may replace the offline shell. Without this an
@@ -134,7 +139,9 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(req, copy));
         }
         return res;
-      }).catch(() => hit);
+      }).catch(() => hit || caches.match(req, { ignoreSearch: true }));
+      /* Offline and the exact ?v= is missing (a shell from one version, its
+         engine from another): the same file of any version beats no chart. */
       return hit || net;
     })
   );

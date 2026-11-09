@@ -24,9 +24,14 @@
         if(k.indexOf('astrarium_')!==0||typeof keys[k]!=='string') return;
         if(k==='astrarium_charts'){
           var mine=[]; try{ mine=JSON.parse(localStorage.getItem(k))||[]; }catch(e){}
-          var ids={}; mine.forEach(function(c){ ids[c.id]=1; });
+          /* The same chart by id, or by name, date and time - the test the CSV
+             import uses, since a chart that came here first through the file
+             the bridge saved got a new id, and was moved a second time. */
+          var sig=function(c){ return c.name+'|'+c.y+'-'+c.mo+'-'+c.d+'|'+c.t; };
+          var ids={}; mine.forEach(function(c){ ids[c.id]=1; ids[sig(c)]=1; });
           var theirs=[]; try{ theirs=JSON.parse(keys[k])||[]; }catch(e){}
-          var add=theirs.filter(function(c){ return c&&c.id&&!ids[c.id]; });
+          var add=theirs.filter(function(c){ if(!c||!c.id||ids[c.id]||ids[sig(c)]) return false; ids[sig(c)]=1; return true; });
+          add=add.slice(0,Math.max(0,2000-mine.length));   // LIB_CAP, not yet defined this early
           moved=add.length;
           if(add.length){ localStorage.setItem(k,JSON.stringify(mine.concat(add))); localStorage.setItem('astrarium_charts_at',String(Date.now())); }
         } else if(!had[k]&&k!=='astrarium_charts_at') localStorage.setItem(k,keys[k]);
@@ -1230,9 +1235,9 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 </div>
 
 
-<script src="./ephemeris.js?v=3.22.3"></script>
-<script src="./planets.js?v=3.22.3"></script>
-<script src="./moon.js?v=3.22.3"></script>
+<script src="./ephemeris.js?v=3.22.4"></script>
+<script src="./planets.js?v=3.22.4"></script>
+<script src="./moon.js?v=3.22.4"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -1241,7 +1246,7 @@ details.unit[open] .dt{animation:unitIn 240ms cubic-bezier(.2,.7,.2,1) both}
 
 /* Bump together with CACHE in sw.js: the two are the same release, and the
    number on screen is how you tell from a phone which one you are looking at. */
-const APP_VERSION='3.22.3';
+const APP_VERSION='3.22.4';
 document.getElementById('ver').textContent=APP_VERSION;
 
 /* ---------- feature flags ----------
@@ -3458,9 +3463,14 @@ const LILITH_SE=[0.00309894,-0.523091,0.0146409,-416.428,0.555731,-0.000948028,-
 function lilithLon(d){
   const T=(d-1.5)/36525;                 // d = 0 is J2000 minus 1.5 days
   const base=263.3532465+T*(4069.0137287+T*(-0.0103200+T*(-1/80053+T/18999000)));
+  /* The fit holds over 1550-2250, so its slow multipliers (1, t, t^2) are held
+     at the edge outside it. The arguments are not: the main term, -416" sin
+     2(F - l), is the apogee reduced from the Moon's tilted orbit to the
+     ecliptic and swings at every date. Taking them from the held t froze its
+     phase and left a constant up to 12' off Swiss Ephemeris before 1550. */
   const t=Math.max(-4.5,Math.min(2.5,T));
-  const F=1.627905233371468+8433.466158130539*t, l=2.3555558982657994+8328.691426955555*t;
-  const lp=-0.04312518020812495+628.301955168488*t, D=5.198466741027443+7771.377146811758*t, x=F-l;
+  const F=1.627905233371468+8433.466158130539*T, l=2.3555558982657994+8328.691426955555*T;
+  const lp=-0.04312518020812495+628.301955168488*T, D=5.198466741027443+7771.377146811758*T, x=F-l;
   const v=[1,t,t*t];
   for(const k of [2,4,6,8]) v.push(Math.sin(k*x),Math.cos(k*x),t*Math.sin(k*x),t*Math.cos(k*x));
   for(const y of [lp,2*D-2*l,2*x-lp,2*x+lp]) v.push(Math.sin(y),Math.cos(y));
@@ -10164,7 +10174,14 @@ function restoreSession(){
        has just written the cast chart over the stored draft. */
     if(cast&&draft&&draft!==cast){
       try{ localStorage.setItem(FORM_KEY,draft); }catch(e){}
-      if(restoreForm(FORM_KEY)) setFormOpen(true);
+      /* Open first, then fill: opening takes the snapshot the close button
+         returns to, and taken after the draft it brought the draft back
+         instead of the chart on screen. */
+      setFormOpen(true);
+      const snap=FORM_SNAP;
+      if(!restoreForm(FORM_KEY)&&snap){       // a draft too thin to keep: back to the chart
+        FORM_FIELDS.forEach(id=>{document.getElementById(id).value=snap.o[id];});
+        SELECTED_CITY=snap.city; TZ_AUTO=snap.auto; renderGeoSum(); setFormOpen(false); }
     }
   }
   else setFormOpen(true);
