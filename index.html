@@ -4123,18 +4123,47 @@ function ianaOffset(zone,y,mo,da,hh,mi){
     return fits.length?Math.max(...fits):before;
   }catch(e){ return null; }
 }
-/* A standard zone offset is always a whole quarter hour. When the database
-   answers with something else it is reporting local mean time, because the
-   place had not adopted standard time yet - and then it is the LMT of the
-   zone's reference city, which can be a quarter hour from the birthplace.
-   So take the database when it names a real zone, and compute local mean
-   time from the birthplace's own longitude when it does not. This is why
-   the rule is not a year: Brno was already on Central European Time in
-   1897, while Eisenach in 1685 was on nothing but the Sun. The library and
-   the form both come through here, so they cannot disagree about it. */
+/* What kind of time the database's offset was. Intl gives the number to the
+   second and never the kind, and the rule here used to guess the kind from
+   the number: off the quarter hour meant local mean time, so the birthplace's
+   own longitude was used. That discarded every legal time kept off the quarter
+   hour - Paris Mean Time for all of France 1891-1911, Dublin Mean Time,
+   Singapore's +07:20, Liberia's -00:44:30 until 1972 - and put Marseille's
+   own mean time where the law said Paris: twelve minutes, three degrees of
+   Ascendant, and the library and the form disagreeing about Milhaud.
+   The compiled database does say it: each period has an abbreviation, and
+   local mean time is written LMT. TZ_LMT_END holds, per zone of the atlas, the
+   UTC second its LMT ended (tools-tz-history.py). Before it, the birth was on
+   the birthplace's own mean time; from it on, the database's offset is the
+   law of the land. */
+/* tz 2026c, /usr/share/zoneinfo, by tools-tz-history.py: zone:UTC second its LMT ended. */
+const TZ_LMT_END=Object.fromEntries('Asia/Shanghai:-2177481943,Africa/Kinshasa:-2035584815,Europe/Istanbul:-2840147752,Africa/Lagos:-2035584815,Asia/Ho_Chi_Minh:-2004073590,Asia/Karachi:-1988166492,Asia/Kolkata:-3645237208,America/Sao_Paulo:-1767214412,America/Mexico_City:-1514739600,Europe/Moscow:-2840149817,Asia/Dhaka:-2524543300,Asia/Seoul:-1948782472,Asia/Tokyo:-2587712400,Africa/Cairo:-2185409109,Africa/Johannesburg:-2458173120,Europe/London:-3852662325,America/New_York:-2717650800,Asia/Jakarta:-3231299232,Asia/Bangkok:-2840164924,Asia/Taipei:-2335248360,America/Lima:-1938538284,America/Bogota:-2707671824,Asia/Hong_Kong:-2056690800,Asia/Baghdad:-2524532260,Asia/Tehran:-1704165944,Africa/Abidjan:-1830383032,Australia/Sydney:-2364113092,Asia/Singapore:-2177477725,Australia/Melbourne:-2364111592,Africa/Dar_es_Salaam:-1946168836,America/Santiago:-2524504635,Asia/Riyadh:-719636812,Asia/Yangon:-2840163887,Asia/Kabul:-2524538208,Africa/Nairobi:-1946168836,Africa/Bamako:-1830383032,Asia/Urumqi:-1325483420,Africa/Addis_Ababa:-1946168836,America/Los_Angeles:-2717640000,Asia/Dubai:-1577936472,Africa/Casablanca:-1773012580,Europe/Berlin:-2422054408,Europe/Madrid:-2177452800,Asia/Pyongyang:-1948782180,Asia/Manila:-2219083200,America/Caracas:-2524505536,Europe/Kyiv:-2840148124,America/Argentina/Buenos_Aires:-2372097972,America/Toronto:-2366736148,America/Guayaquil:-2524502440,Australia/Brisbane:-2366791928,Africa/Luanda:-2035584815,America/Bahia:-1767216356,America/Chicago:-2717647200,Africa/Dakar:-1830383032,Africa/Mogadishu:-1946168836,Africa/Accra:-1830383032,Africa/Ouagadougou:-1830383032,America/Fortaleza:-1767216360,Australia/Perth:-2337925404,Africa/Algiers:-2486592732,Asia/Baku:-1441163964,Europe/Rome:-3252098996,Africa/Lubumbashi:-1924999818,America/Manaus:-1767211196,Africa/Lusaka:-1924999818,America/Santo_Domingo:-2524504824,Africa/Lome:-1830383032,America/Havana:-2524501832,Europe/Paris:-2486592561,America/Argentina/Cordoba:-2372096592,Asia/Damascus:-1577931912,America/La_Paz:-2524505244,Africa/Brazzaville:-2035584815,Asia/Tashkent:-1441168631,Asia/Almaty:-1441170468,Africa/Khartoum:-1230775808,Asia/Aden:-719636812,Africa/Conakry:-1830383032,America/Tijuana:-1514739600,Asia/Beirut:-2840149320,Europe/Bucharest:-2469404664,Europe/Minsk:-2840147416,Europe/Budapest:-2498260580,Europe/Warsaw:-2840145840,Europe/Vienna:-2422055121,Africa/Kampala:-1946168836,America/Recife:-1767217224,America/Phoenix:-2717643600,Asia/Novosibirsk:-1579476700,Asia/Phnom_Penh:-2840164924,Pacific/Auckland:-3192435544,Africa/Harare:-1924999818,Africa/Monrovia:-2776979812,Europe/Stockholm:-2422054408,America/Ciudad_Juarez:-1514739600,America/Belem:-1767213964,Asia/Yekaterinburg:-1688270553,America/Asuncion:-2524507760,Asia/Makassar:-1577951856,Australia/Adelaide:-2364110060,Asia/Kuala_Lumpur:-2177477725,Asia/Kathmandu:-1577943676,Africa/Ndjamena:-1830387612,Indian/Antananarivo:-1946168836,Africa/Douala:-2035584815,Africa/Niamey:-2035584815,America/Edmonton:-1998663968,Africa/Tripoli:-1577926364,Asia/Amman:-1230776624,Europe/Belgrade:-2713915320,America/Montevideo:-1942690509,Africa/Maputo:-1924999818,America/Port-au-Prince:-2524504240,America/Merida:-1514743200,Africa/Nouakchott:-1830383032,Asia/Omsk:-1582088010,Europe/Prague:-3786829064,Europe/Samara:-1593820800,Europe/Copenhagen:-2422054408,Europe/Sofia:-2840146396,Asia/Yerevan:-1441162680,America/Monterrey:-1514743200,Africa/Kigali:-1924999818,Africa/Blantyre:-1924999818,Asia/Krasnoyarsk:-1577513486,Europe/Oslo:-2422054408,Asia/Tbilisi:-2840151551,America/Maceio:-1767217028,Asia/Ashgabat:-1441166012,Europe/Dublin:-2821649679,Europe/Brussels:-2840141850,Europe/Volgograd:-1577761060,America/Guatemala:-1617040676,America/Managua:-2524500892,Asia/Jerusalem:-2840149254,America/Jamaica:-2524503170,America/Chihuahua:-1514739600,America/Campo_Grande:-1767212492,Asia/Bishkek:-1441169904,America/Cancun:-1514743200,America/Indiana/Indianapolis:-2717647200,Europe/Amsterdam:-2840141850,America/Tegucigalpa:-1538503868,Africa/Libreville:-2035584815,Europe/Saratov:-1593820800,Asia/Ulaanbaatar:-2032931252,Asia/Vientiane:-2840164924,Africa/Bangui:-2035584815,America/Hermosillo:-1514739600,America/Mazatlan:-1514739600,Africa/Freetown:-1830383032,Asia/Muscat:-1577936472,Africa/Bujumbura:-1924999818,America/Winnipeg:-2602258284,Europe/Riga:-2840146594,America/Denver:-2717643600,Europe/Sarajevo:-2713915320,Africa/Tunis:-2797202444,Asia/Pontianak:-1946186240,Asia/Dushanbe:-1441168512,Africa/Porto-Novo:-2035584815,Europe/Athens:-2344642492,Europe/Zagreb:-2713915320,America/Vancouver:-2713880852,Europe/Helsinki:-2890258789,Asia/Macau:-2056692850,Asia/Colombo:-2840159964,America/Detroit:-2051202469,Asia/Kuwait:-719636812,Europe/Chisinau:-2840147720,Asia/Barnaul:-1579844100,Europe/Ulyanovsk:-1593820800,Africa/Djibouti:-1946168836,America/Kentucky/Louisville:-2717647200,Asia/Irkutsk:-2840165825,Asia/Vladivostok:-1487321251,America/Cuiaba:-1767212140,Asia/Samarkand:-1441168073,America/Matamoros:-1514743200,Asia/Tomsk:-1578807591,Africa/Asmara:-1946168836,Asia/Novokuznetsk:-1441259328,America/Porto_Velho:-1767210264,America/Argentina/Tucuman:-2372096348,Europe/Simferopol:-2840148984,Europe/Vilnius:-2840146876,Europe/Astrakhan:-1441249932,America/El_Salvador:-1546279392,America/Argentina/Salta:-2372096300,Europe/Lisbon:-1830384000,Europe/Kirov:-1593820800,Asia/Aqtobe:-1441165720,Asia/Kuching:-1383463280,Europe/Kaliningrad:-2422056120,Europe/Skopje:-2713915320,America/Halifax:-2131645536,Africa/Juba:-1230775588,Africa/Bissau:-1830380400,Asia/Hebron:-2185410023,Europe/Bratislava:-3786829064,America/Boa_Vista:-1767211040,America/Rio_Branco:-1767209328,Europe/Tirane:-1767230360,America/Puerto_Rico:-2233035335,Europe/Zurich:-3675198848,Asia/Jayapura:-1172913768,Asia/Gaza:-2185409872,America/Panama:-2524502512,Europe/Tallinn:-2840146740,Africa/Windhoek:-2458170504,Atlantic/Canary:-1509663504,America/Santarem:-1767212472,Africa/Maseru:-2458173120,Asia/Qyzylorda:-1441167712,Pacific/Honolulu:-2334101314,Asia/Chita:-1579419232,Asia/Qatar:-1577935568,Africa/Banjul:-1830383032,America/Costa_Rica:-2524501427,Asia/Oral:-1441164324,America/Araguaina:-1767214032,Asia/Atyrau:-1441164464,America/Anchorage:-2188951224,Pacific/Port_Moresby:-2840176120,Europe/Ljubljana:-2713915320,America/Regina:-2030202084,America/Argentina/Jujuy:-2372096328,Australia/Hobart:-2345795356,Africa/Gaborone:-1924999818,Europe/Podgorica:-2713915320,America/Boise:-2717640000,Asia/Yakutsk:-1579423138,America/Guyana:-1843589241,America/Nassau:-2366736148,America/Paramaribo:-1861906760,Asia/Qostanay:-1441167268,Asia/Nicosia:-1518920008,Asia/Sakhalin:-2031039048,Africa/El_Aaiun:-1136070432,America/Argentina/Mendoza:-2372095484,Asia/Kamchatka:-1487759676,America/Argentina/La_Rioja:-2372095956,Asia/Bahrain:-1577935568,Africa/Malabo:-2035584815,America/Argentina/San_Luis:-2372096076,America/Argentina/Catamarca:-2372096212,Indian/Mauritius:-1988164200,Indian/Reunion:-1577936472,Asia/Dili:-1830412800,Asia/Aqtau:-1441164064,Australia/Darwin:-2364108200,Atlantic/Cape_Verde:-1830376800,America/Argentina/San_Juan:-2372095556,America/Curacao:-2233035335,Atlantic/Reykjavik:-1830383032,America/Punta_Arenas:-2524504580,Africa/Mbabane:-2458173120,America/St_Johns:-2713897748,America/Glace_Bay:-2131646412,Atlantic/Madeira:-2713906344,Indian/Maldives:-2840158440,Asia/Thimphu:-706341516,America/Barbados:-1841256091,America/Argentina/Rio_Gallegos:-2372095388,Pacific/Noumea:-1829387148,Asia/Magadan:-1441188192,Pacific/Fiji:-1709985344,America/Martinique:-2524506940,America/Moncton:-2715882052,Africa/Ceuta:-2177452800,Europe/Luxembourg:-2840141850,Indian/Comoro:-1946168836,America/Port_of_Spain:-2233035335,America/Belize:-1822500432,Asia/Brunei:-1383463280,America/Cayenne:-1846269040,America/Argentina/Ushuaia:-2372095608,Pacific/Guadalcanal:-1806748788,Indian/Mayotte:-1946168836,America/Guadeloupe:-2233035335,Africa/Sao_Tome:-1830384000,America/Antigua:-2233035335,America/St_Thomas:-2233035335,Pacific/Saipan:-2177487540,America/Coyhaique:-2524504304,Pacific/Guam:-2177487540,America/Eirunepe:-1767208832,Asia/Famagusta:-1518920148,Pacific/Apia:-1861878784,Pacific/Tarawa:-2177494324,Pacific/Bougainville:-2840178136,Pacific/Efate:-1829387596,Europe/Monaco:-2486592561,Europe/Malta:-2403478684,America/Juneau:-2188954939,Asia/Hovd:-2032927596,America/Aruba:-2233035335,Pacific/Tahiti:-1806674504,America/Cayman:-2524502512,America/Whitehorse:-2188997988,America/Ojinaga:-1514739600,Europe/Jersey:-3852662325,Europe/Gibraltar:-2821649916,Europe/Isle_of_Man:-3852662325,Pacific/Majuro:-2177494324,America/St_Lucia:-2233035335,America/St_Vincent:-2233035335,America/Grand_Turk:-2524504528,Indian/Mahe:-1577936472,Pacific/Tongatapu:-767189952,America/Dawson_Creek:-2713881544,America/North_Dakota/New_Salem:-2717643600,Europe/Andorra:-2177453164,America/Bahia_Banderas:-1514739600,Atlantic/Azores:-2713904240,Australia/Broken_Hill:-2364110748,America/Swift_Current:-2030201320,America/Dominica:-2233035335,Europe/Guernsey:-3852662325,Asia/Anadyr:-1441194596,America/Indiana/Vincennes:-2717647200,Pacific/Kwajalein:-2177492960,America/Nuuk:-1686083584,Pacific/Palau:-2177485076,Pacific/Chuuk:-2840176120,Pacific/Rarotonga:-543072056,Atlantic/Faroe:-1955748776,America/St_Kitts:-2233035335,Pacific/Galapagos:-1230746496,Pacific/Pago_Pago:-1861879032,Atlantic/Bermuda:-2524506042,Europe/Mariehamn:-2890258789,America/Kralendijk:-2233035335,Pacific/Kosrae:-2177491916,Europe/San_Marino:-3252098996,America/Sitka:-2188954727,America/Lower_Princes:-2233035335,America/Tortola:-2233035335,America/Menominee:-2659759773,America/Goose_Bay:-2713895900,America/Grenada:-2233035335,Pacific/Easter:-2524495352,America/Indiana/Tell_City:-2717647200,Pacific/Pohnpei:-1806748788,America/Marigot:-2233035335,Pacific/Funafuti:-2177494324,America/Miquelon:-1847650520,America/Kentucky/Monticello:-2717647200,Europe/Vaduz:-3675198848,America/St_Barthelemy:-2233035335,America/Creston:-2717643600,Atlantic/St_Helena:-1830383032,Pacific/Chatham:-3192437628,America/Blanc-Sablon:-2233035335,America/Nome:-2188947502,America/Indiana/Knox:-2717647200,America/North_Dakota/Beulah:-2717643600,America/Noronha:-1767217820,Indian/Chagos:-1988167780,America/Atikokan:-2524502512,America/Fort_Nelson:-2713880953,America/Indiana/Winamac:-2717647200,Pacific/Nauru:-1545131260,Arctic/Longyearbyen:-2422054408,America/Indiana/Petersburg:-2717647200,Atlantic/Stanley:-2524507716,America/Anguilla:-2233035335,Pacific/Kiritimati:-2177415040,Pacific/Marquesas:-1806676920,America/Indiana/Vevay:-2717647200,Europe/Busingen:-3675198848,America/Metlakatla:-2188955622,America/Dawson:-2188996940,Pacific/Wallis:-2177494324,Pacific/Gambier:-1806678012,America/Montserrat:-2233035335,Pacific/Norfolk:-2177493112,Europe/Vatican:-3252098996,America/Indiana/Marengo:-2717647200,America/Yakutat:-2188953665,America/Thule:-1686079492,Pacific/Niue:-543069620,America/North_Dakota/Center:-2717643600,Pacific/Fakaofo:-2177411704,Indian/Christmas:-2840164924,Indian/Cocos:-2840163887,Pacific/Pitcairn:-2177421580,Indian/Kerguelen:-2840158440,Atlantic/South_Georgia:-2524512832'.split(',').map(s=>{const i=s.lastIndexOf(':');return [s.slice(0,i),+s.slice(i+1)];}));
+/* The exception: zones whose first legal period was only the reference city's
+   own mean time, while every other town of the zone kept its own. Moscow Mean
+   Time was Moscow's - Kazan, in the same zone today, kept Kazan time, 46
+   minutes away - and the same holds across the Russian Empire, Austria's
+   Bohemia and Upper Hungary before 1891 and British India's railway times.
+   Inside these spans an offset off the quarter hour is the reference city's
+   mean time, so the birthplace's own is used instead, as before. Each end is
+   the zone's last change of that city time in the database, so a later
+   national time (Latvia's Riga time from 1919, Romania's Bucharest time in
+   Chisinau from 1918) is still taken as law. */
+const TZ_CITY_MEAN=Object.fromEntries(Object.entries({'Europe/Moscow':'1919-07-01','Europe/Kyiv':'1924-05-01',
+  'Europe/Minsk':'1924-05-01','Asia/Tbilisi':'1924-05-01','Asia/Irkutsk':'1920-01-24','Europe/Simferopol':'1924-05-01',
+  'Asia/Yekaterinburg':'1919-07-15','Europe/Riga':'1918-04-15','Europe/Tallinn':'1918-01-31','Europe/Vilnius':'1916-12-31',
+  'Europe/Chisinau':'1918-02-14','Europe/Warsaw':'1915-08-04','Europe/Prague':'1891-09-30','Europe/Bratislava':'1891-09-30',
+  'Asia/Kolkata':'1905-12-31'}).map(([z,d])=>[z,Date.parse(d+'T00:00Z')/1000]));
 function placeOffset(zone,lon,y,mo,da,hh,mi){
   const off=zone==null?null:ianaOffset(zone,y,mo,da,hh,mi);
-  if(off==null||Math.abs(off*60-Math.round(off*60/15)*15)>0.01) return lon==null?off:LMT(lon);
+  const lmt=()=>lon==null?off:LMT(lon);
+  if(off==null) return lmt();
+  const odd=Math.abs(off*60-Math.round(off*60/15)*15)>0.01;
+  const end=TZ_LMT_END[zone];
+  if(end==null) return odd?lmt():off;          // a zone the table does not know: the old rule
+  const ut=Date.UTC(y,mo-1,da,hh,mi)/1000-off*3600;
+  if(ut<end) return lmt();
+  const cm=TZ_CITY_MEAN[zone];
+  if(cm&&odd&&ut<cm) return lmt();
   return off;
 }
 
@@ -6342,12 +6371,19 @@ function drawWheel(ch,tr,t3=TR3_CHART){
        be fifteen or twenty chords across the middle, and the wheel stops being
        readable at about six. They belong to the middle ring, as the list and
        the grid do; the third ring is drawn, not read. */
+    /* A synastry hit read the other way (rev) has its planet in the INNER
+       chart and its angle or point in the OUTER one; drawn as an ordinary hit
+       it joined two points that make no aspect. */
+    const pointLon=(c,p)=>p==='ASC'?c.asc:p==='MC'?c.mc:(c.pos[p]?c.pos[p].lon:null);
     TR_HITS.filter(h=>h.orb<=2).forEach(h=>{
-      const nlon=h.np==='ASC'?ch.asc:h.np==='MC'?ch.mc:(ch.pos[h.np]?ch.pos[h.np].lon:null);
-      /* Only from a body the ring actually draws: the transiting node is in
-         the hit list but has no glyph, and its chord came out of nowhere. */
-      if(nlon==null||!tr.pos[h.tp]||!WHEEL_BODIES.includes(h.tp)) return;
-      const [x1,y1]=polar(tr.pos[h.tp].lon,rTrG-11), [x2,y2]=polar(nlon,rPl+12);
+      const outC=h.rev?tr:ch, inC=h.rev?ch:tr;   // inC holds the planet, outC the point
+      const plon=inC.pos[h.tp]?inC.pos[h.tp].lon:null, nlon=pointLon(outC,h.np);
+      /* Only between things the wheel actually draws: the transiting node is
+         in the hit list but has no glyph, and its chord came out of nowhere. */
+      if(nlon==null||plon==null||!WHEEL_BODIES.includes(h.tp)) return;
+      if(h.rev&&!(h.np==='ASC'||h.np==='MC'||WHEEL_BODIES.includes(h.np))) return;
+      const [x1,y1]=h.rev?polar(nlon,rTrG-11):polar(plon,rTrG-11),
+            [x2,y2]=h.rev?polar(plon,rPl+12):polar(nlon,rPl+12);
       s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${h.asp.color}" stroke-width="1" stroke-dasharray="3 3" opacity="0.55"/>`;
     });
     s+=ringBand(tr,rTrG,'var(--accent)','trp',sepTr,tri?rMidScale-8:rZodIn-1,LIT_OUT);
@@ -8669,6 +8705,10 @@ function formNow(){
   const o={};
   FORM_FIELDS.forEach(id=>{const e=document.getElementById(id); if(e) o[id]=e.value;});
   if(typeof SELECTED_CITY!=='undefined'&&SELECTED_CITY) o.__city=SELECTED_CITY;
+  /* Whether the offset follows the city is part of the form: without it a
+     cold start came back with TZ_AUTO true, and the first change of the time
+     silently replaced an offset typed by hand with the atlas one. */
+  if(typeof TZ_AUTO!=='undefined') o.__auto=TZ_AUTO;
   return o;
 }
 function saveForm(cast){
@@ -8683,7 +8723,12 @@ function restoreForm(key){
   if(!o) return false;
   FORM_FIELDS.forEach(id=>{const e=document.getElementById(id);
     if(e&&o[id]!=null&&o[id]!=='') e.value=o[id];});
-  if(o.__city&&typeof SELECTED_CITY!=='undefined') SELECTED_CITY=o.__city;
+  if(typeof SELECTED_CITY!=='undefined'){
+    SELECTED_CITY=o.__city||null;
+    /* A save from before __auto existed: keep the offset as written rather
+       than let the atlas overwrite it. */
+    TZ_AUTO=o.__auto===true&&!!SELECTED_CITY;
+  }
   syncSaveBtn(); renderGeoSum();
   return !!(o.date&&o.time);
 }
@@ -9335,7 +9380,9 @@ function loadChartEntry(e,own){
   /* The name comes along: it heads the chart, and a saved chart loaded back
      should read as saved rather than offer to be saved a second time. */
   document.getElementById('chartName').value=own?(e.name||''):LX(e.name);
-  TZ_AUTO=false;
+  /* The chart brings its own place and offset; a city picked earlier in the
+     atlas is not this chart's, and a later restart must not reapply it. */
+  SELECTED_CITY=null; TZ_AUTO=false;
   /* Close the panel, otherwise picking a chart leaves the whole library
      between you and the wheel you just asked for. */
   closePanel('libCard');

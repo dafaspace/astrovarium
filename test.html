@@ -5479,6 +5479,41 @@ function run(){
   });
   /* REVIEW-2026-10-15-END */
 
+  group('Проверка кода 9 ноября');
+  t('#7 законное время страны вне четверти часа берётся из базы, а не по долготе места',()=>{
+    const cases=[['Europe/Paris',5.3764,1892,9,4,14,0,9+21/60,'Марсель 1892, парижское среднее время'],
+      ['Europe/Dublin',-8.47,1900,6,1,12,0,-(25+21/60),'Корк 1900, дублинское время'],
+      ['Europe/Dublin',-6.26,1916,7,1,12,0,34+39/60,'Дублин, лето 1916'],
+      ['Asia/Singapore',100.33,1935,6,1,12,0,440,'Пенанг 1935, +07:20'],
+      ['Africa/Monrovia',-10.8,1950,6,1,12,0,-44.5,'Монровия 1950'],
+      ['Europe/Moscow',49.1,1900,6,1,12,0,49.1*4,'Казань 1900: своё время, не московское'],
+      ['Europe/Paris',5.3764,1880,6,1,12,0,5.3764*4,'Марсель 1880: до закона 1891 местное']];
+    const bad=cases.map(([z,lon,y,mo,d,h,mi,want,nm])=>{
+      const got=ev(`placeOffset(${JSON.stringify(z)},${lon},${y},${mo},${d},${h},${mi})`)*60;
+      return Math.abs(got-want)<0.02?null:`${nm}: ${got.toFixed(2)} мин вместо ${want.toFixed(2)}`;}).filter(Boolean);
+    return !bad.length||bad.join('; ');
+  });
+  t('#1 ручной пояс переживает перезапуск, а карта из библиотеки не берёт город, выбранный раньше',()=>{
+    const r=ev(`(()=>{const keep=[SELECTED_CITY,TZ_AUTO,localStorage.getItem(FORM_KEY)];
+      try{
+        SELECTED_CITY={n:'Moscow',z:'Europe/Moscow',lat:55.75,lon:37.62}; TZ_AUTO=false;
+        const saved=formNow();
+        TZ_AUTO=true; localStorage.setItem(FORM_KEY,JSON.stringify(saved)); restoreForm(FORM_KEY);
+        const afterRestore=TZ_AUTO;
+        const old={...saved}; delete old.__auto; TZ_AUTO=true; localStorage.setItem(FORM_KEY,JSON.stringify(old)); restoreForm(FORM_KEY);
+        const oldSave=TZ_AUTO;
+        SELECTED_CITY={n:'Moscow',z:'Europe/Moscow',lat:55.75,lon:37.62}; loadChartEntry(CHART_LIBRARY[1]);
+        return {saved:saved.__auto, afterRestore, oldSave, cityAfterLib:SELECTED_CITY};
+      }finally{ SELECTED_CITY=keep[0]; TZ_AUTO=keep[1];
+        keep[2]==null?localStorage.removeItem(FORM_KEY):localStorage.setItem(FORM_KEY,keep[2]); }})()`);
+    const bad=[];
+    if(r.saved!==false) bad.push('в сохранённой форме нет __auto');
+    if(r.afterRestore!==false) bad.push('после восстановления пояс снова следует за городом');
+    if(r.oldSave!==false) bad.push('старое сохранение без __auto включило пересчёт');
+    if(r.cityAfterLib!==null) bad.push('карта из библиотеки оставила прежний город');
+    return !bad.length||bad.join('; ');
+  });
+
   render();
 }
 
