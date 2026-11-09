@@ -16,7 +16,7 @@
 # The six are chosen for the paths they exercise, not for being interesting:
 # a two-body dispositor cycle and two intercepted signs (1985), a four-body
 # cycle (2000), three separate final dispositors at once (2001, which also
-# falls back from Placidus to equal above the polar circle), exaltation and
+# falls back from Placidus to Porphyry above the polar circle), exaltation and
 # three combust bodies (1990), fall and detriment (2000, 1650), and the far
 # end of the ephemeris in the southern hemisphere (2200).
 1985-3-20 placidus night int:AriLib term:- loop:Mars+Venus
@@ -75,18 +75,18 @@ Pluto Gem10 h3 - d:Mercury r:- cadent neutral underBeams
 Chiron Leo28 h6 - d:Sun r:- cadent neutral free
 rec Jupiter>Mercury:e Jupiter>Neptune:d Jupiter>Saturn:e Jupiter>Selena:d Jupiter>Uranus:d Jupiter>Venus:e Mars>Moon:e Mars>SNode:d Mercury>Fortune:d Mercury>Fortune:e Mercury>Lilith:d Mercury>Mars:d Mercury>Pluto:d Mercury>Sun:d Moon>Mercury:d Moon>NNode:e Moon>Saturn:d Moon>Venus:d Saturn>Jupiter:e Saturn>Moon:d Sun>Chiron:d Venus>Jupiter:d Venus>NNode:d
 --
-2001-6-21 equal day int:- term:Moon/Mercury/Venus loop:-
-Sun Cnc0 h2 peregrine d:Moon r:4 succedent inSect -
-Moon Cnc6 h2 ruler d:self r:3 succedent contraryToSect combust
-Mercury Gem22 h1 ruler d:self r:2,5 angular inSect combust
+2001-6-21 porphyry day int:CncVirCapPsc term:Moon/Mercury/Venus loop:-
+Sun Cnc0 h4 peregrine d:Moon r:5 angular inSect -
+Moon Cnc6 h4 ruler d:self r:- angular contraryToSect combust
+Mercury Gem22 h4 ruler d:self r:2,3,4 angular inSect combust
 Venus Tau15 h12 ruler d:self r:1,6 cadent contraryToSect free
-Mars Sgr20 h7 peregrine d:Jupiter r:7,12 angular contraryToSect free
-Jupiter Gem25 h2 detriment d:Mercury r:8,11 succedent inSect combust
-Saturn Gem7 h1 peregrine d:Mercury r:9,10 angular inSect free
-Uranus Aqr24 h10 - d:Saturn r:- angular neutral free
-Neptune Aqr8 h9 - d:Saturn r:- cadent neutral free
-Pluto Sgr13 h7 - d:Jupiter r:- angular neutral free
-Chiron Sgr25 h8 - d:Jupiter r:- succedent neutral free
+Mars Sgr20 h10 peregrine d:Jupiter r:7,12 angular contraryToSect free
+Jupiter Gem25 h4 detriment d:Mercury r:8,9,10 angular inSect combust
+Saturn Gem7 h2 peregrine d:Mercury r:11 succedent inSect free
+Uranus Aqr24 h11 - d:Saturn r:- succedent neutral free
+Neptune Aqr8 h10 - d:Saturn r:- angular neutral free
+Pluto Sgr13 h9 - d:Jupiter r:- cadent neutral free
+Chiron Sgr25 h10 - d:Jupiter r:- angular neutral free
 rec Jupiter>Chiron:d Jupiter>Mars:d Jupiter>Moon:e Jupiter>NNode:e Jupiter>Pluto:d Jupiter>Sun:e Mars>SNode:e Mercury>Jupiter:d Mercury>Saturn:d Moon>Fortune:e Moon>NNode:d Moon>Sun:d Moon>Venus:e Saturn>Lilith:d Saturn>Neptune:d Saturn>SNode:d Saturn>Selena:d Saturn>Uranus:d Venus>Fortune:d
 --
 2200-3-1 placidus day int:- term:Jupiter loop:-
@@ -160,18 +160,18 @@ Pluto Gem10 h3 - d:Mercury r:8 cadent neutral underBeams
 Chiron Leo28 h6 - d:Sun r:- cadent neutral free
 rec Jupiter>Mercury:e Jupiter>Neptune:d Jupiter>Saturn:e Jupiter>Selena:d Jupiter>Uranus:d Jupiter>Venus:e Mars>Moon:e Mercury>Fortune:d Mercury>Fortune:e Mercury>Lilith:d Mercury>Mars:d Mercury>Pluto:d Mercury>Sun:d Moon>Mercury:d Moon>NNode:e Moon>Saturn:d Moon>Venus:d Pluto>SNode:d Saturn>Jupiter:e Saturn>Moon:d Sun>Chiron:d Venus>Jupiter:d Venus>NNode:d
 --
-2001-6-21 equal day int:- term:Moon/Mercury/Venus/Uranus loop:-
-Sun Cnc0 h2 peregrine d:Moon r:4 succedent inSect -
-Moon Cnc6 h2 ruler d:self r:3 succedent contraryToSect combust
-Mercury Gem22 h1 ruler d:self r:2,5 angular inSect combust
+2001-6-21 porphyry day int:CncVirCapPsc term:Moon/Mercury/Venus/Uranus loop:-
+Sun Cnc0 h4 peregrine d:Moon r:5 angular inSect -
+Moon Cnc6 h4 ruler d:self r:- angular contraryToSect combust
+Mercury Gem22 h4 ruler d:self r:2,3,4 angular inSect combust
 Venus Tau15 h12 ruler d:self r:1,6 cadent contraryToSect free
-Mars Sgr20 h7 peregrine d:Jupiter r:12 angular contraryToSect free
-Jupiter Gem25 h2 detriment d:Mercury r:8 succedent inSect combust
-Saturn Gem7 h1 peregrine d:Mercury r:9 angular inSect free
-Uranus Aqr24 h10 ruler d:self r:10 angular neutral free
-Neptune Aqr8 h9 - d:Uranus r:11 cadent neutral free
-Pluto Sgr13 h7 - d:Jupiter r:7 angular neutral free
-Chiron Sgr25 h8 - d:Jupiter r:- succedent neutral free
+Mars Sgr20 h10 peregrine d:Jupiter r:12 angular contraryToSect free
+Jupiter Gem25 h4 detriment d:Mercury r:8,9,10 angular inSect combust
+Saturn Gem7 h2 peregrine d:Mercury r:- succedent inSect free
+Uranus Aqr24 h11 ruler d:self r:11 succedent neutral free
+Neptune Aqr8 h10 - d:Uranus r:- angular neutral free
+Pluto Sgr13 h9 - d:Jupiter r:7 cadent neutral free
+Chiron Sgr25 h10 - d:Jupiter r:- angular neutral free
 rec Jupiter>Chiron:d Jupiter>Mars:d Jupiter>Moon:e Jupiter>NNode:e Jupiter>Pluto:d Jupiter>Sun:e Mars>SNode:e Mercury>Jupiter:d Mercury>Saturn:d Moon>Fortune:e Moon>NNode:d Moon>Sun:d Moon>Venus:e Saturn>SNode:d Uranus>Lilith:d Uranus>Neptune:d Uranus>Selena:d Venus>Fortune:d
 --
 2200-3-1 placidus day int:- term:- loop:Sun+Neptune+Mars/Mercury+Uranus
@@ -245,18 +245,18 @@ Pluto Gem10 h3 - d:Mercury r:8 cadent neutral underBeams
 Chiron Leo28 h6 - d:Sun r:- cadent neutral free
 rec Jupiter>Mercury:e Jupiter>Neptune:d Jupiter>Saturn:e Jupiter>Selena:d Jupiter>Uranus:d Jupiter>Venus:e Mars>Moon:e Mars>SNode:d Mercury>Fortune:d Mercury>Fortune:e Mercury>Lilith:d Mercury>Mars:d Mercury>Pluto:d Mercury>Sun:d Moon>Mercury:d Moon>NNode:e Moon>Saturn:d Moon>Venus:d Pluto>SNode:d Saturn>Jupiter:e Saturn>Moon:d Sun>Chiron:d Venus>Jupiter:d Venus>NNode:d
 --
-2001-6-21 equal day int:- term:Moon/Mercury/Venus/Uranus loop:-
-Sun Cnc0 h2 peregrine d:Moon r:4 succedent inSect -
-Moon Cnc6 h2 ruler d:self r:3 succedent contraryToSect combust
-Mercury Gem22 h1 ruler d:self r:2,5 angular inSect combust
+2001-6-21 porphyry day int:CncVirCapPsc term:Moon/Mercury/Venus/Uranus loop:-
+Sun Cnc0 h4 peregrine d:Moon r:5 angular inSect -
+Moon Cnc6 h4 ruler d:self r:- angular contraryToSect combust
+Mercury Gem22 h4 ruler d:self r:2,3,4 angular inSect combust
 Venus Tau15 h12 ruler d:self r:1,6 cadent contraryToSect free
-Mars Sgr20 h7 peregrine d:Jupiter r:7,12 angular contraryToSect free
-Jupiter Gem25 h2 detriment d:Mercury r:8,11 succedent inSect combust
-Saturn Gem7 h1 peregrine d:Mercury r:9,10 angular inSect free
-Uranus Aqr24 h10 ruler d:self r:10 angular neutral free
-Neptune Aqr8 h9 - d:Uranus|Saturn r:11 cadent neutral free
-Pluto Sgr13 h7 - d:Jupiter r:7 angular neutral free
-Chiron Sgr25 h8 - d:Jupiter r:- succedent neutral free
+Mars Sgr20 h10 peregrine d:Jupiter r:7,12 angular contraryToSect free
+Jupiter Gem25 h4 detriment d:Mercury r:8,9,10 angular inSect combust
+Saturn Gem7 h2 peregrine d:Mercury r:11 succedent inSect free
+Uranus Aqr24 h11 ruler d:self r:11 succedent neutral free
+Neptune Aqr8 h10 - d:Uranus|Saturn r:- angular neutral free
+Pluto Sgr13 h9 - d:Jupiter r:7 cadent neutral free
+Chiron Sgr25 h10 - d:Jupiter r:- angular neutral free
 rec Jupiter>Chiron:d Jupiter>Mars:d Jupiter>Moon:e Jupiter>NNode:e Jupiter>Pluto:d Jupiter>Sun:e Mars>SNode:e Mercury>Jupiter:d Mercury>Saturn:d Moon>Fortune:e Moon>NNode:d Moon>Sun:d Moon>Venus:e Saturn>Lilith:d Saturn>Neptune:d Saturn>SNode:d Saturn>Selena:d Saturn>Uranus:d Uranus>Lilith:d Uranus>Neptune:d Uranus>Selena:d Venus>Fortune:d
 --
 2200-3-1 placidus day int:- term:Jupiter loop:Sun+Neptune+Mars/Mercury+Uranus

@@ -1834,9 +1834,9 @@ function run(){
       return true;
     });
   });
-  t('за полярным кругом откат на равнодомную систему',()=>{
+  t('за полярным кругом откат на Порфирия',()=>{
     const ch=ev('computeChart(2000,6,15,12,0,78.2,15.6)');
-    return ch.houses.system==='equal'||('система: '+ch.houses.system);
+    return ch.houses.system==='porphyry'||('система: '+ch.houses.system);
   });
   t('аспекты к узлам вычисляются',()=>{   // когда-то не вычислялись вовсе
     const ch=ev('computeChart(1985,11,3,13+37/60,3,59.9343,30.3351)');
@@ -1961,9 +1961,15 @@ function run(){
       HSYS=k; HOUSE_3D=k3; return out.slice(0,5);})()`);
     return bad.length===0||'картинка спорит с текстом: '+bad.join(', ');
   });
-  t('за полярным кругом Плацидус отступает на равнодомную',()=>{
+  /* С 9 ноября на Порфирия, как Swiss Ephemeris: её swe_houses за полярным
+     кругом отдаёт ERR и куспиды Порфирия (проверено через ctypes, Тромсё 2001). */
+  t('за полярным кругом Плацидус отступает на Порфирия, как Swiss Ephemeris',()=>{
     ev('HSYS="placidus"');
-    return ev('computeChart(2000,6,15,12,0,78.2,15.6)').houses.system==='equal'||'не отступил';
+    const ch=ev('computeChart(2001,6,21,21.75,0,69.6492,18.9553)');
+    const want=[53.851,61.406,68.962,76.517,128.962,181.406,233.851,241.406,248.962,256.517,308.962,1.406];
+    if(ch.houses.system!=='porphyry') return 'система: '+ch.houses.system;
+    const bad=want.map((w,i)=>Math.abs(((ch.houses.cusps[i]-w+540)%360)-180)>0.01?`куспид ${i+1}: ${ch.houses.cusps[i].toFixed(3)} против ${w}`:null).filter(Boolean);
+    return !bad.length||bad.join('; ');
   });
   t('выбор системы сохраняется и восстанавливается',()=>{
     const k='astrarium_hsys', saved=W.localStorage.getItem(k);
@@ -5212,7 +5218,7 @@ function run(){
     const r=ev(`(()=>{const k=HSYS; try{ HSYS='placidus';
       return [66.499,66.55,66.6].map(lat=>computeChart(2001,6,21,12,2,lat,25.73,false).houses.system);
     }finally{HSYS=k;}})()`);
-    return (r[0]==='placidus'&&r[1]==='placidus'&&r[2]==='equal')||r.join(', ');
+    return (r[0]==='placidus'&&r[1]==='placidus'&&r[2]==='porphyry')||r.join(', ');
   });
   t('#14 тесный сходящийся аспект Луны назван сходящимся',()=>{
     const r=ev(`(()=>{const sq=ASPECT_DEFS.find(a=>a.name==='square'), cj=ASPECT_DEFS.find(a=>a.name==='conjunction');
@@ -5574,14 +5580,14 @@ function run(){
     if(r.compTU!==true) bad.push('композит с партнёром без времени не помечен');
     return !bad.length||bad.join('; ');
   });
-  t('#10 средняя Лилит вне 1550-2250 сохраняет главный член, а не замерзает',()=>{
-    const r=ev(`[[1500,6,1],[1549,1,1],[2300,6,1]].map(([y,m,d])=>{
-      const dd=Date.UTC(y,m-1,d)/86400000+2440587.5-2451543.5, T=(dd-1.5)/36525;
-      const base=263.3532465+T*(4069.0137287+T*(-0.0103200+T*(-1/80053+T/18999000)));
-      const F=1.627905233371468+8433.466158130539*T, l=2.3555558982657994+8328.691426955555*T;
-      const want=rev(base-416.4*Math.sin(2*(F-l))/3600);
-      let dlt=(lilithLon(dd)-want)*3600; if(dlt>648000) dlt-=1296000; if(dlt<-648000) dlt+=1296000; return Math.abs(dlt);})`);
-    const bad=r.map((x,i)=>x>15?['1500','1549','2300'][i]+': '+x.toFixed(1)+'″':null).filter(Boolean);
+  t('#10 средняя Лилит вне 1550-2250 совпадает со Swiss Ephemeris до 3″',()=>{
+    /* Эталон: pyswisseph 2.10.03, MEAN_APOG, FLG_MOSEPH|FLG_NONUT, 0h TT
+       (как в tools-lilith.py), снят 9 ноября. До правки было до 737″. */
+    const ref=[[1450,1,1,203.816566],[1500,6,1,95.146294],[1549,1,1,272.165082],[2300,6,1,246.875631],[2400,1,1,338.751557]];
+    const bad=ref.map(([y,m,d,want])=>{
+      const dd=Date.UTC(y,m-1,d)/86400000+2440587.5-2451543.5;
+      const got=ev(`lilithLon(${dd})`); let dl=((got-want+540)%360-180)*3600;
+      return Math.abs(dl)>3?`${y}: ${dl.toFixed(1)}″`:null;}).filter(Boolean);
     return !bad.length||bad.join('; ');
   });
   t('#2 крестик после холодного старта с черновиком возвращает построенную карту',()=>{

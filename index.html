@@ -4446,8 +4446,13 @@ function placidusCusps(ramc,lat,ecl,asc,mc){
   /* Placidus is defined up to the polar circle, 90 minus the obliquity, about
      66.56 - not 66, which took it from Rovaniemi, Salekhard and forty-odd
      other places in the atlas while Swiss Ephemeris still computes it there.
-     The same edge computeChart and Koch use. */
-  if(Math.abs(lat)>=90-ecl) return equalCusps(asc);
+     The same edge computeChart and Koch use. Past it Swiss Ephemeris gives up
+     on Placidus as on Koch and returns Porphyry: asked through ctypes, its
+     swe_houses answers ERR with the Porphyry cusps to the thousandth of a
+     degree (Tromso, 21 Jun 2001; pyswisseph turns that ERR into an exception,
+     which is why the reference file holds an error there). This fell back to
+     Equal, so polar Placidus charts differed from every Swiss-based program. */
+  if(Math.abs(lat)>=90-ecl) return porphyryCusps(asc,mc);
   function raToLon(ra){ return atan2d(sind(ra), cosd(ra)*cosd(ecl)); }
   function iterCusp(start,f,nocturnal){
     let ra=rev(ramc+start);
