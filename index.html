@@ -6624,11 +6624,18 @@ function wzZoomAt(s,x,y){
      screen printed as a wheel with every other aspect at 7 percent, and the
      card that explained why is not on paper. The light comes back after. */
   let printLit=null;
+  /* Cmd+P never passes through the Print button, so the folds are opened
+     here too, and put back as they were afterwards: shut, they printed as
+     bare headings. */
+  let printFolds=null;
   addEventListener('beforeprint',()=>{
+    printFolds=['positionsCard','confCard','gridCard'].map(id=>document.getElementById(id)).filter(Boolean)
+      .map(el=>{ const was=el.open; el.open=true; return [el,was]; });
     resetWheelZoom(); renderPrintRing();
     if(ISO||CONF_ISO){ printLit={iso:ISO,conf:CONF_ISO}; ISO=null; CONF_ISO=null; redrawWheel(); }
   });
   addEventListener('afterprint',()=>{
+    if(printFolds){ printFolds.forEach(([el,was])=>{ el.open=was; }); printFolds=null; }
     if(printLit){ ISO=printLit.iso; CONF_ISO=printLit.conf; printLit=null; redrawWheel(); }
   });
 }
@@ -6656,7 +6663,7 @@ const REC_ORDER={domicile:0,exaltation:1};
 /* "Юпитер принимает Луна" was wrong: the object takes the accusative. Planet
    names are grammatically inanimate in Russian, so every masculine one already
    matches its nominative and only the two feminine ones need a form. */
-const PLANET_ACC={ru:{Moon:'Луну',Venus:'Венеру'}};
+const PLANET_ACC={ru:{Moon:'Луну',Venus:'Венеру'},uk:{Venus:'Венеру'}};   // uk Місяць is masculine: unchanged
 const PNacc=n=>((PLANET_ACC[LANG]||{})[n])||PN(n);
 
 /* The dispositors reachable from one body, each listed once with its own
@@ -6776,7 +6783,7 @@ function structureHead(ch,p){
   const r=structureLines(ch,p); if(!r) return '';
   const f=r.f;
   const bits=[LX(SIGN_NAME)[f.sign], t('houseHead').replace('{n}',f.house)];
-  if(f.dignity) bits.push(t(DIG_KEY[f.dignity])+(f.dignityAlso?', '+t(DIG_KEY[f.dignityAlso]).toLowerCase():''));
+  if(f.dignity) bits.push(t(DIG_KEY[f.dignity])+(f.dignityAlso?', '+(LANG==='de'?t(DIG_KEY[f.dignityAlso]):t(DIG_KEY[f.dignityAlso]).toLowerCase()):''));
   return bits.join(' · ');
 }
 
@@ -6821,10 +6828,13 @@ async function copyText(txt,btn){
     }catch(e2){}
   }
   if(btn){
-    const was=btn.textContent;
+    /* The label to return to is remembered once: a second press inside the
+       1.6 s took "Copied" as the label, and the last timer left it there. */
+    if(btn.dataset.label==null) btn.dataset.label=btn.textContent;
+    clearTimeout(btn._copyT);
     btn.textContent=ok?t('copied'):t('copyFail');
     btn.classList.toggle('done',ok);
-    setTimeout(()=>{btn.textContent=was;btn.classList.remove('done');},1600);
+    btn._copyT=setTimeout(()=>{btn.textContent=btn.dataset.label;delete btn.dataset.label;btn.classList.remove('done');},1600);
   }
   return ok;
 }
@@ -7076,7 +7086,7 @@ function placementLines(ch){
     const head=[`${PN(p)} ${place(b.lon)}`, t('houseNum').replace('{n}',f.house)];
     if(b.retro) head.push(t('retrograde'));
     if(isStationary(p,b.spd)) head.push(t('stationary'));
-    if(f.dignity) head.push(t(DIG_KEY[f.dignity])+(f.dignityAlso?', '+t(DIG_KEY[f.dignityAlso]).toLowerCase():''));
+    if(f.dignity) head.push(t(DIG_KEY[f.dignity])+(f.dignityAlso?', '+(LANG==='de'?t(DIG_KEY[f.dignityAlso]):t(DIG_KEY[f.dignityAlso]).toLowerCase()):''));
     if(f.angularity) head.push(t(ANG_KEY[f.angularity]));
     if(f.sect.status!=='neutral') head.push(t(f.sect.status==='inSect'?'sectIn':'sectContrary'));
     if(f.solar.condition&&f.solar.condition!=='free') head.push(t(SOL_KEY[f.solar.condition]));
@@ -8563,6 +8573,10 @@ function upgradeSelect(sel){
   sel.parentNode.insertBefore(wrap,sel);
   wrap.appendChild(sel); wrap.appendChild(btn); wrap.appendChild(list);
   sel.classList.add('ddnative');
+  /* Hidden by opacity it still took a Tab stop, an invisible first stop in
+     front of every dropdown; the button is the control now. Labels pointing
+     at the select still focus it, and focus is handed to the button. */
+  sel.tabIndex=-1; sel.setAttribute('aria-hidden','true');
   const paint=()=>{
     /* An option may carry a shorter label for the closed button; the list always
        shows the full one. */
@@ -9452,14 +9466,16 @@ function renderLibrary(){
   /* Both language variants go into the haystack, not just the displayed one:
      with the app in Russian, "rozsa" typed on a Latin keyboard should still
      find Миклош Рожа. */
-  const both=e=>e._own ? [e.name,e.city]
+  const both=e=>e._own ? [e.name,e.city,e.note||'']
     : [e.name.ru,e.name.en,e.city.ru,e.city.en];
   const q=libFold((document.getElementById('libFind')||{}).value);
   const hit=q ? all.filter(e=>libFold(
       both(e).concat([e.y,kindWords(e),e.src||'']).join(' ')).includes(q)) : all;
   /* Own charts stay on top: they are the ones you came for. */
   const mine=hit.filter(e=>e._own), rest=hit.filter(e=>!e._own);
-  rest.sort(LIB_SORTS[LIB_SORT].fn);
+  /* The chosen order applies to both groups; own charts used to stay in the
+     order they were saved whatever the switch said. */
+  mine.sort(LIB_SORTS[LIB_SORT].fn); rest.sort(LIB_SORTS[LIB_SORT].fn);
   let html=mine.map(e=>libRow(e,true)).join(''), era=null;
   rest.forEach(e=>{
     if(LIB_SORT==='date'){
@@ -9599,6 +9615,13 @@ const LIB_CAP=2000;
 const CSV_COLS=['name','date','time','utc_offset','latitude','longitude','city','rodden','source','note'];
 const csvCell=v=>{ const s=v==null?'':String(v);
   return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+/* A text cell that starts with = + - or @ is a formula to Excel, which
+   computes it on opening and saves the result: a note "=see above" came back
+   as #NAME?. The text columns get an apostrophe in front, which Excel hides
+   and keeps as text, and the import takes it off again. Numbers and offsets
+   (+03:00, -21.94) are left alone: Excel reads those as the values they are. */
+const csvGuard=v=>{ const s=v==null?'':String(v); return /^[=+\-@]/.test(s)?"'"+s:s; };
+const csvUnguard=s=>/^'[=+\-@]/.test(s)?s.slice(1):s;
 /* The separator is whatever the header line uses most. Excel writes ';' in
    every locale where the comma is the decimal mark - Russian, German, French,
    Italian - so a file round-tripped through it on such a machine was refused
@@ -9610,7 +9633,9 @@ function csvSep(text){
 }
 function csvParse(text){
   const rows=[]; let row=[], cell='', q=false;
-  text=text.replace(/^﻿/,'');
+  /* Lines ending in CR alone ("CSV (Macintosh)" from Excel for Mac) were one
+     long line, read as an empty success. */
+  text=text.replace(/^﻿/,'').replace(/\r\n?/g,'\n');
   const sep=csvSep(text);
   for(let i=0;i<text.length;i++){
     const c=text[i];
@@ -9634,7 +9659,7 @@ function libToCsv(){
     e.name, `${String(e.y).padStart(4,'0')}-${pad2(e.mo)}-${pad2(e.d)}`,
     e.t==null?'':clockText(e.t), e.tz==null?'':formatOffset(e.tz),
     e.lat, e.lon, e.city||'', e.rr||'', e.src||'', e.note||''
-  ].map(csvCell).join(',')));
+  ].map((v,i)=>csvCell([0,6,7,8,9].includes(i)?csvGuard(v):v)).join(',')));
   return lines.join('\r\n')+'\r\n';
 }
 /* Cells are read strictly. parseFloat took "55,7558" as 55 and "37W30" as
@@ -9683,19 +9708,23 @@ function csvToLib(text){
   const have=new Set(savedCharts().map(e=>`${e.name}|${e.y}-${e.mo}-${e.d}|${e.t}`));
   const list=savedCharts(); let n=0, skipped=0, rejected=0; const added=[];
   for(let i=1;i<rows.length;i++){
-    const r=rows[i]; const g=k=>{const j=at(k);return j===-1?'':(r[j]||'').trim();};
+    const r=rows[i]; const g=k=>{const j=at(k);return j===-1?'':csvUnguard((r[j]||'').trim());};
     const dt=csvDate(g('date')), t=csvClock(g('time'));
     const lat=csvCoord(g('latitude'),90), lon=csvCoord(g('longitude'),180);
     /* No offset, no chart. Without it the row opened at UTC: three hours out
        for Moscow, and nothing on screen to say so. */
     const tz=parseOffset(g('utc_offset'));
     if(!dt||Number.isNaN(t)||Number.isNaN(lat)||Number.isNaN(lon)||Number.isNaN(tz)){ rejected++; continue; }
-    const key=`${g('name')}|${dt[0]}-${dt[1]}-${dt[2]}|${t}`;
+    /* Keyed by the name as stored: a row with no name is saved under its city
+       or date, so a key from the empty name never matched it and every
+       re-import of the same file added it again. */
+    const name=g('name')||g('city')||g('date');
+    const key=`${name}|${dt[0]}-${dt[1]}-${dt[2]}|${t}`;
     if(have.has(key)) continue;
     have.add(key);
     if(list.length>=LIB_CAP){ skipped++; continue; }
     const id='u'+Date.now()+'_'+n;
-    list.unshift({id, name:g('name')||g('city')||g('date'),
+    list.unshift({id, name,
       y:dt[0], mo:dt[1], d:dt[2], t, lat, lon,
       tz, city:g('city'), rr:g('rodden')||'', src:g('source')||'',
       note:g('note')||''});
@@ -9724,7 +9753,7 @@ document.getElementById('expCsv').addEventListener('click',async()=>{
      to the sheet by the Share plugin. Without either, the <a download> below
      wrote nothing on Android while the line above said "last export: today" -
      the fault the iOS build had first. */
-  const fname=`astrotrip-charts-${todayStr()}.csv`;
+  const fname=`astrovarium-charts-${todayStr()}.csv`;
   if(inStoreShell()&&navigator.share&&navigator.canShare&&
      navigator.canShare({files:[new File(['a'],'a.csv',{type:'text/csv'})]})){
     const file=new File([libToCsv()],fname,{type:'text/csv'});
@@ -9743,7 +9772,7 @@ document.getElementById('expCsv').addEventListener('click',async()=>{
   const blob=new Blob([libToCsv()],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=`astrotrip-charts-${todayStr()}.csv`;
+  a.download=`astrovarium-charts-${todayStr()}.csv`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   markExported();
@@ -9780,7 +9809,7 @@ document.getElementById('printBtn').addEventListener('click',()=>{
   ['positionsCard','confCard','gridCard'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.open=true;
   });
-  closeDropdown();
+  closeDropdown();                    // Cmd+P skips this button: beforeprint opens the folds too
   fillPrintSheet();
   window.print();
   /* WKWebView ignores window.print() and returns without a word, so on the
@@ -10021,7 +10050,13 @@ document.addEventListener('click',e=>{
 });
 document.getElementById('accessApply').addEventListener('click',()=>{
   const inp=document.getElementById('accessCode');
-  applyAccessKey(inp.value,true,false).then(ok=>{ if(ok) inp.value=''; });
+  /* The same rule as a key from a link: an older key pasted by hand does not
+     replace one that runs longer. The current one is announced instead. */
+  let saved=null; try{ saved=localStorage.getItem(ACCESS_KEY); }catch(e){}
+  Promise.all([verifyAccessKey(inp.value),saved?verifyAccessKey(saved):0]).then(([typed,kept])=>{
+    const use=(kept>Date.now()&&kept>typed)?saved:inp.value;
+    applyAccessKey(use,true,false).then(ok=>{ if(ok) inp.value=''; });
+  });
 });
 /* A key arrives as a link (#key=...) or is already stored. The fragment stays in
    the address. 3.18.0 took it off at once, and then the access lived only in the
@@ -10192,7 +10227,9 @@ renderGeoSum(); setGeoOpen(false);
 function restoreSession(){
   let cast=null, draft=null;
   try{ cast=localStorage.getItem(CAST_KEY); draft=localStorage.getItem(FORM_KEY); }catch(e){}
-  if(restoreForm(cast?CAST_KEY:FORM_KEY)&&run()){
+  /* A draft with a date and a time but no place is not a chart: run() would
+     greet the launch with an alert. It goes back into the open form instead. */
+  if(restoreForm(cast?CAST_KEY:FORM_KEY)&&formGeo()&&run()){
     setFormOpen(false); LAST_CAST=snapForm();
     /* An edit that was never cast goes back into the form, open, over the
        chart it was being made from. Taken from the copy read above: run()

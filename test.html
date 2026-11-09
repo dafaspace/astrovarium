@@ -5367,9 +5367,14 @@ function run(){
     return !bad.length||bad.join('; ');
   });
   t('#48 движок грузится с версией в адресе, и service worker кладёт его с ней',()=>{
-    const src=D.querySelector('script[src*="ephemeris.js"]').getAttribute('src'), v=ev('APP_VERSION');
-    if(src!=='./ephemeris.js?v='+v) return 'в index.html '+src;
-    return /ephemeris\.js\?v=\$\{V\}/.test(SW_SRC)||'sw.js кэширует ephemeris.js без версии';
+    /* All three files of the engine, not only the first (review 9 Nov, #47). */
+    const v=ev('APP_VERSION'), bad=[];
+    for(const f of ['ephemeris','planets','moon']){
+      const el=D.querySelector(`script[src*="${f}.js"]`), src=el&&el.getAttribute('src');
+      if(src!==`./${f}.js?v=${v}`) bad.push(`в index.html ${src}`);
+      if(!new RegExp(f+'\\.js\\?v=\\$\\{V\\}').test(SW_SRC)) bad.push(`sw.js кэширует ${f}.js без версии`);
+    }
+    return !bad.length||bad.join('; ');
   });
   t('#38 выпадающий список: стрелки стоят на краях, Tab закрывает',()=>{
     const r=ev(`(()=>{const sel=document.getElementById('hsysSet')||document.querySelector('select[data-dd]');

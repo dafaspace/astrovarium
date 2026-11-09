@@ -81,7 +81,12 @@ self.addEventListener('install', e => {
            engine files of the previous version that activate had just deleted:
            no chart offline. */
         c.addAll(CRITICAL.map(u => new Request(u, { cache: 'reload' }))),
-        ...OPTIONAL.map(u => c.add(u).catch(() => {})),
+        /* The atlas is carried over from the previous version's cache when it
+           is there: it does not change between releases, and every release
+           otherwise downloaded its 4 MB again. */
+        ...OPTIONAL.map(u => (u === './cities.txt'
+          ? caches.match(u).then(old => old ? c.put(u, old) : c.add(u))
+          : c.add(u)).catch(() => {})),
         hadAsteroids().then(had => had && c.add(`./asteroids.js?v=${V}`).catch(() => {}))
       ]))
       .then(() => self.skipWaiting())
@@ -131,8 +136,14 @@ self.addEventListener('fetch', e => {
     return;
   }
 
+  /* A versioned file never changes under its name, and the atlas (7.6 MB) is
+     fetched again by every new version's install. Refreshing them on every
+     launch re-downloaded the atlas each time the app opened online, against
+     the promise "once only". */
+  const frozen = url.searchParams.has('v') || url.pathname.endsWith('/cities.txt');
   e.respondWith(
     caches.match(req).then(hit => {
+      if (hit && frozen) return hit;
       const net = fetch(req).then(res => {
         if (res && res.ok) {
           const copy = res.clone();

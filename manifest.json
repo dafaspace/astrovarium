@@ -1,7 +1,7 @@
 {
   "name": "Astrovarium",
   "short_name": "Astrovarium",
-  "description": "Precise natal charts offline, with a slider that moves transits, progressions and directions from seconds to centuries. No network, no account.",
+  "description": "Precise natal charts, positions checked against JPL Horizons. Works offline once the city atlas is downloaded. Transits, progressions and directions in the full version. No account.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",
