@@ -100,8 +100,9 @@ affected: their storage lives inside the app.
    using the CSV export the app already has (`libToCsv`). The new site takes the same file
    (`importCsvText`). Settings and the key are carried by the fragment. The key link from
    `ACCESS-KEYS.md` also works on the new address, so if the fragment fails the key does not.
-4. **The bridge stays at least a year: agreed.** It is three static files at no cost. Review it no
-   earlier than Nov 2027, and only once the old address gets no visits.
+4. **The bridge stays until 31 Dec 2026** (Dafa, 10 Nov 2026, replacing "at least a year"): the
+   old address was used by Dafa and Olga, not by strangers. The page says the date in every
+   language it speaks.
 
 ## Said plainly
 

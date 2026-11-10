@@ -2,14 +2,16 @@
    copy of the old app finds it at its next check and is replaced by it. It
    deletes the old app's caches and keeps only this page, so the bridge opens
    offline too: the charts stored here can still be saved as a file without a
-   connection. */
+   connection. dafaspace.github.io is one origin shared with Keymood, Hum and
+   the others, and Cache Storage is per origin, so only names starting
+   astrotrip- (every cache the old app ever made) are deleted. */
 const CACHE = 'astrotrip-bridge-1';
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './manifest.json'])).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k.startsWith('astrotrip-') && k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
